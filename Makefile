@@ -11,7 +11,7 @@ clean:
 clobber:
 	rm *~
 
-ringmaster: ringmaster.c
+ringmaster: ringmaster.c potato.h
 	gcc $(CFLAGS) -o $@ $<
 
 player: player.c
