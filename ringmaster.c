@@ -54,7 +54,7 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
          "port_num:\t%s\n"
          "num_players:\t%s\n"
          "num_hops:\t%s\n",
-         margc[0], margc[1], margc[2], margc[3]);
+         margc[0], margc[1], margc[2], margc[3]); // remove
 
   // convert inputs to numbers -- strtol
   // inputs->port_num = margc[1];
@@ -62,8 +62,10 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
   size_t num_players = str_to_num(margc[2]);
   size_t num_hops = str_to_num(margc[3]);
 
-  printf("PORT NUM:\t%lu\n", port_num);
+  printf("PORT NUM:\t%lu\n", port_num); // remove
 
+  // check: num_players > 1
+  // check: num_hops >= 0 | <= 512
   if (num_players < MIN_PLAYERS) {
     printf("Minimum no. of players is %d\n", MIN_PLAYERS);
     exit(EXIT_FAILURE);
@@ -73,11 +75,12 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
     exit(EXIT_FAILURE);
   }
 
-  // check: num_players > 1
-  // check: num_hops >= 0 | <= 512
-
   // if all ok, return
   // else exit FAILURE
+  inputs->port_num = port_num;
+  inputs->num_players = num_players;
+  inputs->num_hops = num_hops;
+  return;
 }
 
 // learning comment: looks like void functions set perror and functons that
