@@ -1,6 +1,10 @@
 /**
+ * ringmaster.c
+ * Usage: ./ringmaster <port_num> <num_players> <num_hops>
+ *
  * Prathikshaa
  * February 14, 2019
+ *
  * Attempt-2 after irresponsible file loss.
  * Using git now.
  * Caution -- always double check your make clean
@@ -11,6 +15,13 @@
 
 #include "potato.h"
 #include <unistd.h>
+
+// sockets
+#include <sys/socket.h>
+#include <sys/types.h>
+
+// addrinfo
+#include <netdb.h>
 
 // todo: is the parse_input function vulnerable to buffer overflow due to
 // dynamic memory alloc?
