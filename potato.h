@@ -8,6 +8,9 @@
  *
  */
 
+#ifndef __POTATO_H__
+#define __POTATO_H__
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,3 +25,8 @@ typedef struct _ringmaster_inputs_t {
   size_t num_players;
   size_t num_hops;
 } ringmaster_inputs_t;
+
+void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs);
+size_t str_to_num(char *str);
+
+#endif

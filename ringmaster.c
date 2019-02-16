@@ -13,6 +13,14 @@
  *
  */
 
+// C/C++ style guides:
+// https://www.cs.swarthmore.edu/~newhall/unixhelp/c_codestyle.html,
+// https://google.github.io/styleguide/cppguide.html#C++_Version
+
+#define MAX_HOPS 512
+#define MIN_HOPS 0
+#define MIN_PLAYERS 1
+
 #include "potato.h"
 #include <unistd.h>
 
@@ -26,6 +34,14 @@
 // todo: is the parse_input function vulnerable to buffer overflow due to
 // dynamic memory alloc?
 
+size_t str_to_num(char *str) {
+  printf("string: %s\n", str);
+  // use strtol
+
+  // negative nums ?? what error
+  return 0;
+}
+
 void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
   if (margv != 4) {
     printf("%d is an invalid number of arguments.\n"
@@ -34,8 +50,28 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
     exit(EXIT_FAILURE);
   }
 
-  // convert inputs to numbers
+  printf("program name:\t%s\n"
+         "port_num:\t%s\n"
+         "num_players:\t%s\n"
+         "num_hops:\t%s\n",
+         margc[0], margc[1], margc[2], margc[3]);
+
+  // convert inputs to numbers -- strtol
   // inputs->port_num = margc[1];
+  size_t port_num = str_to_num(margc[1]);
+  size_t num_players = str_to_num(margc[2]);
+  size_t num_hops = str_to_num(margc[3]);
+
+  printf("PORT NUM:\t%lu\n", port_num);
+
+  if (num_players < MIN_PLAYERS) {
+    printf("Minimum no. of players is %d\n", MIN_PLAYERS);
+    exit(EXIT_FAILURE);
+  }
+  if ((num_hops < MIN_HOPS) || (num_hops > MAX_HOPS)) {
+    printf("No. of hops must be in range [%d, %d]", MIN_HOPS, MAX_HOPS);
+    exit(EXIT_FAILURE);
+  }
 
   // check: num_players > 1
   // check: num_hops >= 0 | <= 512
@@ -49,13 +85,18 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
 
 int main(int argv, char *argc[]) {
   // parse input
-  ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t));
+  ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
   parse_input(argv, argc, rm_ip);
   printf("Potato Ringmaster\n");
   printf("Players = %lu\n", rm_ip->num_players);
   printf("Hops = %lu\n", rm_ip->num_hops);
 
   // if parse function returns -1, exit.
+
+  // open socket to listen to players
+  // refer to multi-client video here
+
+  // man select
 
   return EXIT_SUCCESS;
 }
