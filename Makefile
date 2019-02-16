@@ -1,4 +1,4 @@
-TARGETS = ringmaster player
+TARGETS=ringmaster player
 CFLAGS=-std=gnu99 -ggdb3 -Wall -Werror -pedantic
 
 all: $(TARGETS)
@@ -7,6 +7,9 @@ all: $(TARGETS)
 
 clean:
 	rm -f *~ *.o $(TARGETS)
+
+clobber:
+	rm *~
 
 ringmaster: ringmaster.c
 	gcc $(CFLAGS) -o $@ $<
