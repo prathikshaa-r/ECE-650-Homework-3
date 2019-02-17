@@ -46,13 +46,12 @@ void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
          "num_hops:\t%s\n",
          margc[0], margc[1], margc[2], margc[3]); // remove
 
-  // convert inputs to numbers -- strtol
-  // inputs->port_num = margc[1];
-  size_t port_num = str_to_num(margc[1]);
+  // parsing the string to numbers
+  const char *port_num = margc[1];
   size_t num_players = str_to_num(margc[2]);
   size_t num_hops = str_to_num(margc[3]);
 
-  printf("PORT NUM:\t%lu\n", port_num); // remove
+  printf("PORT NUM:\t%s\n", port_num); // remove
 
   // check: num_players > 1
   // check: num_hops >= 0 | <= 512
