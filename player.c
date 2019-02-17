@@ -5,6 +5,7 @@
  * Prathikshaa
  * February 16, 2019
  */
+#include "potato.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +19,17 @@
 
 int main(int argv, char *argc[]) {
   // parse inputs
+  if (argv != 3) {
+    printf("%d is an invalid number of arguments.\n"
+           "Usage: %s <ringmaster_machine_name> <ringmaster_port_num>\n",
+           argv, argc[0]);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("program name:\t\t\t%s\n"
+         "ringmaster_machine_name:\t%s\n"
+         "ringmaster_port_num:\t\t%s\n",
+         argc[0], argc[1], argc[2]); // remove
 
   // connect to ringmaster
 

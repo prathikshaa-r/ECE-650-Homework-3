@@ -22,6 +22,7 @@
 #define MIN_PLAYERS 1
 
 #include "potato.h"
+#include <errno.h>
 #include <unistd.h>
 
 // sockets
@@ -31,18 +32,7 @@
 // addrinfo
 #include <netdb.h>
 
-// todo: is the parse_input function vulnerable to buffer overflow due to
-// dynamic memory alloc?
-
-size_t str_to_num(char *str) {
-  printf("string: %s\n", str);
-  // use strtol
-
-  // negative nums ?? what error
-  return 0;
-}
-
-void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
+void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
   if (margv != 4) {
     printf("%d is an invalid number of arguments.\n"
            "Usage: %s <port_num> <num_players> <num_hops>\n",
@@ -71,7 +61,7 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
     exit(EXIT_FAILURE);
   }
   if ((num_hops < MIN_HOPS) || (num_hops > MAX_HOPS)) {
-    printf("No. of hops must be in range [%d, %d]", MIN_HOPS, MAX_HOPS);
+    printf("No. of hops must be in range [%d, %d]\n", MIN_HOPS, MAX_HOPS);
     exit(EXIT_FAILURE);
   }
 
@@ -89,7 +79,7 @@ void parse_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
 int main(int argv, char *argc[]) {
   // parse input
   ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
-  parse_input(argv, argc, rm_ip);
+  parse_rm_input(argv, argc, rm_ip);
   printf("Potato Ringmaster\n");
   printf("Players = %lu\n", rm_ip->num_players);
   printf("Hops = %lu\n", rm_ip->num_hops);
