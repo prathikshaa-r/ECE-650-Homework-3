@@ -47,16 +47,17 @@ int main(int argv, char *argc[]) {
 
   int rm_status;
   int rm_fd;
-  struct addrinfo rm_info;
+  struct addrinfo rm_hints;
   struct addrinfo *rm_info_list, *rm_it;
 
   // get the addr of the ringmaster
-  memset(&rm_info, 0, sizeof(rm_info));
-  rm_info.ai_family = AF_UNSPEC; // v4 v6 agnostic
-  rm_info.ai_socktype = SOCK_STREAM;
+  memset(&rm_hints, 0, sizeof(rm_hints));
+  rm_hints.ai_family = AF_UNSPEC; // v4 v6 agnostic
+  rm_hints.ai_socktype = SOCK_STREAM;
+  rm_hints.ai_flags = AI_CANONNAME; // cannon name
 
   rm_status =
-      getaddrinfo(p_ip->machine_name, p_ip->port_num, &rm_info, &rm_info_list);
+      getaddrinfo(p_ip->machine_name, p_ip->port_num, &rm_hints, &rm_info_list);
 
   if (rm_status != 0) {
     fprintf(stderr, "Error: cannot get addr info for ringmaster:\n%s\n",
@@ -70,7 +71,9 @@ int main(int argv, char *argc[]) {
   for (rm_it = rm_info_list; rm_it != NULL; rm_it = rm_it->ai_next) {
     rm_fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
     if (rm_fd == -1) {
-      fprintf(stderr, "Error: cannot create socket to connect to ringmaster\n");
+      fprintf(
+          stderr,
+          "Error: cannot create socket to connect to ringmaster\n"); // remove
       continue;
     }
     if (connect(rm_fd, rm_it->ai_addr, rm_it->ai_addrlen) != -1) {
