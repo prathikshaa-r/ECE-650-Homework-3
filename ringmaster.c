@@ -21,6 +21,8 @@
 #define MIN_HOPS 0
 #define MIN_PLAYERS 1
 
+#define BACKLOG 100 // 1000? more?
+
 #include "potato.h"
 #include <errno.h>
 #include <unistd.h>
@@ -95,14 +97,14 @@ int main(int argv, char *argc[]) {
 
   /* server -- binds to ip, port
      client -- connects to ip, port
-     ** get addr, create socket (internet endpoint), bind, select, listen
-   */
+  */
+  // get addr, create socket (internet endpoint), bind, listen,  accept, select
 
   // get addr
   memset(&rm_hints, 0, sizeof(rm_hints));
   rm_hints.ai_family = AF_UNSPEC;
   rm_hints.ai_socktype = SOCK_STREAM;
-  rm_hints.ai_flags = AI_CANONNAME;
+  rm_hints.ai_flags = AI_PASSIVE; // AI_CANONNAME;
 
   rm_status = getaddrinfo(NULL, rm_ip->port_num, &rm_hints, &rm_info_list);
   if (rm_status != 0) {
@@ -111,8 +113,9 @@ int main(int argv, char *argc[]) {
     exit(EXIT_FAILURE);
   }
 
-  // make socket
+  // loop through all addresses until you can bind successfully
   for (rm_it = rm_info_list; rm_it != NULL; rm_it = rm_it->ai_next) {
+    // socket
     rm_fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
 
     if (rm_fd == -1) {
@@ -121,8 +124,12 @@ int main(int argv, char *argc[]) {
 
     // todo: understand the port reuse mechanism
     int yes = 1;
-    rm_status = setsockopt(rm_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    if (setsockopt(rm_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+      perror("setsockopt:");
+      exit(EXIT_FAILURE);
+    }
 
+    // bind
     if (bind(rm_fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
       break;
     }
@@ -134,6 +141,23 @@ int main(int argv, char *argc[]) {
     // no address succeeded
     fprintf(stderr, "Error: failed to bind to any address retrieved");
     exit(EXIT_FAILURE);
+  }
+
+  // listen
+  if (listen(rm_fd, BACKLOG) == -1) {
+    perror("Error: cannot listenon socket\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Listening on port %s\n", rm_ip->port_num); // remove
+
+  struct sockaddr_storage socket_addr;
+  socklen_t socket_addr_len = sizeof(socket_addr);
+  int player_fd =
+      accept(rm_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
+
+  if (player_fd == -1) {
+    perror("Error: failed to accept connection on socket\n");
   }
 
   // accept incoming connections
