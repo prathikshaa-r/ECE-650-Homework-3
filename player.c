@@ -117,6 +117,9 @@ int main(int argv, char *argc[]) {
 
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
+  char *ack = "ACK";
+  send(rm_fd, ack, strlen(ack), 0);
+
   // get neighbours info in stream
   // recv "left_ip:###|left_port:###|right_ip:###|right_port:###"
 
