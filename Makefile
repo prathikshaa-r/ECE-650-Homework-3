@@ -14,7 +14,7 @@ clobber:
 ringmaster: ringmaster.c potato.h
 	gcc $(CFLAGS) -o $@ $<
 
-player: player.c
+player: player.c potato.h
 	gcc $(CFLAGS) -o $@ $<
 
 
