@@ -87,8 +87,69 @@ int main(int argv, char *argc[]) {
 
   // open socket to listen to players
   // refer to multi-client video here
+  // server setup
+  int rm_status;
+  int rm_fd;
+  struct addrinfo rm_hints;
+  struct addrinfo *rm_info_list, *rm_it;
+
+  /* server -- binds to ip, port
+     client -- connects to ip, port
+     ** get addr, create socket (internet endpoint), bind, select, listen
+   */
+
+  // get addr
+  memset(&rm_hints, 0, sizeof(rm_hints));
+  rm_hints.ai_family = AF_UNSPEC;
+  rm_hints.ai_socktype = SOCK_STREAM;
+  rm_hints.ai_flags = AI_CANONNAME;
+
+  rm_status = getaddrinfo(NULL, rm_ip->port_num, &rm_hints, &rm_info_list);
+  if (rm_status != 0) {
+    fprintf(stderr, "Error: failed to get address of host:\n%s\n",
+            gai_strerror(rm_status));
+    exit(EXIT_FAILURE);
+  }
+
+  // make socket
+  for (rm_it = rm_info_list; rm_it != NULL; rm_it = rm_it->ai_next) {
+    rm_fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
+
+    if (rm_fd == -1) {
+      continue;
+    }
+
+    // todo: understand the port reuse mechanism
+    int yes = 1;
+    rm_status = setsockopt(rm_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+    if (bind(rm_fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
+      break;
+    }
+    // if failed to bind
+    close(rm_fd);
+  }
+
+  if (rm_it == NULL) {
+    // no address succeeded
+    fprintf(stderr, "Error: failed to bind to any address retrieved");
+    exit(EXIT_FAILURE);
+  }
+
+  // accept incoming connections
+  for (size_t i = 0; i < rm_ip->num_players; i++) {
+    // listen to <num_players> players
+
+    // send player ("id~%lu|tot~%lu", i, rm_ip->num_players)
+
+    // recv their listening port
+  }
 
   // man select
+
+  // close server
+  freeaddrinfo(rm_info_list);
+  close(rm_fd);
 
   return EXIT_SUCCESS;
 }
