@@ -5,6 +5,9 @@
  * Prathikshaa
  * February 16, 2019
  */
+#define POTATO_SIZE 5120
+#define SHORT_MSG_SIZE 512
+
 #include "potato.h"
 
 #include <stdio.h>
@@ -90,10 +93,10 @@ int main(int argv, char *argc[]) {
 
   // get player id and num_players from ringmaster
   // recv "id:###|tot:###"
-  char buffer[512]; // random len
+  char buffer[SHORT_MSG_SIZE]; // random len
   ssize_t read_id;
   //  while (1) {
-  read_id = recv(rm_fd, buffer, 512, 0);
+  read_id = recv(rm_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
   if (read_id == -1) {
     fprintf(stderr, "Failed to recv data");
   }
@@ -119,6 +122,10 @@ int main(int argv, char *argc[]) {
 
   char *ack = "ACK";
   send(rm_fd, ack, strlen(ack), 0);
+
+  // bind to and listen on a free port
+
+  // send port number to ringmaster
 
   // get neighbours info in stream
   // recv "left_ip:###|left_port:###|right_ip:###|right_port:###"
