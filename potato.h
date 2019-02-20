@@ -33,6 +33,14 @@ typedef struct _player_inputs_t {
   const char *port_num;
 } player_inputs_t;
 
+typedef struct _player_info_t {
+  int fd;
+  char *hostname;
+  char *port;
+  struct _player_info_t *left;
+  struct _player_info_t *right;
+} player_info_t;
+
 void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs);
 void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs);
 size_t str_to_num(char *str);
