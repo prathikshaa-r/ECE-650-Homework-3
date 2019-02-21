@@ -21,7 +21,10 @@
 #define MIN_HOPS 0
 #define MIN_PLAYERS 1
 
-#define BACKLOG 100 // 1000? more?
+#define POTATO_SIZE 5120
+#define SHORT_MSG_SIZE 512
+
+#define LISTEN_BACKLOG 100 // 1000? more?
 
 #include "potato.h"
 #include <errno.h>
@@ -111,6 +114,7 @@ int main(int argv, char *argc[]) {
     fprintf(stderr, "Error: failed to get address of host:\n%s\n",
             gai_strerror(rm_status));
     exit(EXIT_FAILURE);
+    //    handle_error("Error: failed to get addr of host\n");
   }
 
   // loop through all addresses until you can bind successfully
@@ -144,24 +148,38 @@ int main(int argv, char *argc[]) {
   }
 
   // listen
-  if (listen(rm_fd, BACKLOG) == -1) {
+  if (listen(rm_fd, LISTEN_BACKLOG) == -1) {
     perror("Error: cannot listenon socket\n");
     exit(EXIT_FAILURE);
   }
 
   printf("Listening on port %s\n", rm_ip->port_num); // remove
 
-  struct sockaddr_storage socket_addr;
-  socklen_t socket_addr_len = sizeof(socket_addr);
-  int player_fd =
-      accept(rm_fd, (struct sockaddr *)&socket_addr, &socket_addr_len);
+  struct sockaddr_storage player_addr;
+  socklen_t player_addr_len = sizeof(player_addr);
 
-  if (player_fd == -1) {
-    perror("Error: failed to accept connection on socket\n");
-  }
+  // struct array for storing players info
+  player_info_t players_info[rm_ip->num_players];
+
+  /* player_info_t *ring_head = &players_info[0]; // player id 0 */
+  /* player_info_t *ring_tail = */
+  /*     &players_info[rm_ip->num_players - 1]; // player id num_players - 1 */
 
   // accept incoming connections
   for (size_t i = 0; i < rm_ip->num_players; i++) {
+
+    int player_fd =
+        accept(rm_fd, (struct sockaddr *)&player_addr, &player_addr_len);
+
+    if (player_fd == -1) {
+      perror("Error: failed to accept connection on socket\n");
+    }
+
+    players_info[i].fd = player_fd;
+    printf("player id:\t%lu\nsock_id:\t%d\n", i, players_info[i].fd); // remove
+
+    // send ("id:%lu|tot:%lu", i, rm_ip->num_players)
+
     // listen to <num_players> players
 
     // send player ("id~%lu|tot~%lu", i, rm_ip->num_players)
