@@ -149,7 +149,7 @@ int main(int argv, char *argc[]) {
 
   // listen
   if (listen(rm_fd, LISTEN_BACKLOG) == -1) {
-    perror("Error: cannot listenon socket\n");
+    perror("Error: cannot listen on socket\n");
     exit(EXIT_FAILURE);
   }
 
