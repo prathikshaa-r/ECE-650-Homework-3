@@ -1,6 +1,6 @@
 #include "potato.h"
 
-int main() {
+int main(void) {
   int fd = open_server_socket(NULL, "0");
 
   if (fd == -1) {

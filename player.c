@@ -48,63 +48,30 @@ int main(int argv, char *argc[]) {
   printf("Machine Name:\t%s\n", p_ip->machine_name); // remove
   printf("Port Num:\t%s\n", p_ip->port_num);         // remove
 
-  int rm_status;
-  int rm_fd;
-  struct addrinfo rm_hints;
-  struct addrinfo *rm_info_list, *rm_it;
-
-  // get the addr of the ringmaster
-  memset(&rm_hints, 0, sizeof(rm_hints));
-  rm_hints.ai_family = AF_UNSPEC; // v4 v6 agnostic
-  rm_hints.ai_socktype = SOCK_STREAM;
-  rm_hints.ai_flags = AI_CANONNAME; // cannon name
-
-  rm_status =
-      getaddrinfo(p_ip->machine_name, p_ip->port_num, &rm_hints, &rm_info_list);
-
-  if (rm_status != 0) {
-    fprintf(stderr, "Error: cannot get addr info for ringmaster:\n%s\n",
-            gai_strerror(rm_status));
-    exit(EXIT_FAILURE);
-    // ref: beej.us/guide/bgnet/examples/selectserver.c
-  }
-
-  // connect to ringmaster
-  // from man getaddrinfo -- loop till we connect
-  for (rm_it = rm_info_list; rm_it != NULL; rm_it = rm_it->ai_next) {
-    rm_fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
-    if (rm_fd == -1) {
-      fprintf(
-          stderr,
-          "Error: cannot create socket to connect to ringmaster\n"); // remove
-      continue;
-    }
-    if (connect(rm_fd, rm_it->ai_addr, rm_it->ai_addrlen) != -1) {
-      // successful connecion to ringmaster
-      break;
-    }
-    close(rm_fd); // failed to connect
-  }
-
-  if (rm_it == NULL) {
-    fprintf(stderr, "Error: Failed to connect to ringmaster.\n");
+  int rm_fd = open_client_socket(p_ip->machine_name, p_ip->port_num);
+  if (rm_fd == -1) {
+    fprintf(stderr,
+            "Failed to establish connection with ringmaster at %s, %s\n",
+            p_ip->machine_name, p_ip->port_num);
     exit(EXIT_FAILURE);
   }
 
   // get player id and num_players from ringmaster
-  // recv "id:###|tot:###"
+  // 01 recv "id:###|tot:###"
   char buffer[SHORT_MSG_SIZE]; // random len
   ssize_t read_id;
-  //  while (1) {
+
   read_id = recv(rm_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
   if (read_id == -1) {
     fprintf(stderr, "Failed to recv data");
+    exit(EXIT_FAILURE);
   }
-  /*  else */
-  /*     break; */
-  /* } */
+
   if (read_id == 0) {
+    fprintf(stderr, "Connection closed by server\n");
+    exit(EXIT_FAILURE);
   }
+
   printf("Recv returned %ld\n", read_id); // remove
   buffer[read_id] = '\0';
   printf("Server said:\t%s\n", buffer); // remove
@@ -120,8 +87,17 @@ int main(int argv, char *argc[]) {
 
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
-  char *ack = "ACK";
-  send(rm_fd, ack, strlen(ack), 0);
+  // 02 send "hostname~###|port~###|"
+  int l_fd = open_server_socket(NULL, 0);
+  if (l_fd == -1) {
+    fprintf(stderr, "Player failed to open a server socket.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  send_player_info(rm_fd, l_fd);
+
+  /* char *ack = "ACK"; */
+  /* send(rm_fd, ack, strlen(ack), 0); */
 
   // bind to and listen on a free port
 
@@ -140,7 +116,7 @@ int main(int argv, char *argc[]) {
   // if ringmaster stream sends "END_GAME" -- close all sockets and exit
   // successfully.
 
-  freeaddrinfo(rm_info_list);
+  free(p_ip);
   close(rm_fd);
 
   return EXIT_SUCCESS;

@@ -84,76 +84,17 @@ int main(int argv, char *argc[]) {
   // parse input
   ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
   parse_rm_input(argv, argc, rm_ip);
-  printf("Potato Ringmaster\n");
-  printf("Players = %lu\n", rm_ip->num_players);
-  printf("Hops = %lu\n", rm_ip->num_hops);
+  printf("Potato Ringmaster\n"
+         "Players = %lu\n"
+         "Hops = %lu\n",
+         rm_ip->num_players, rm_ip->num_hops);
 
-  // if parse function returns -1, exit.
-
-  // open socket to listen to players
-  // refer to multi-client video here
-  // server setup
-  int rm_status;
-  int rm_fd;
-  struct addrinfo rm_hints;
-  struct addrinfo *rm_info_list, *rm_it;
-
-  /* server -- binds to ip, port
-     client -- connects to ip, port
-  */
-  // get addr, create socket (internet endpoint), bind, listen,  accept, select
-
-  // get addr
-  memset(&rm_hints, 0, sizeof(rm_hints));
-  rm_hints.ai_family = AF_UNSPEC;
-  rm_hints.ai_socktype = SOCK_STREAM;
-  rm_hints.ai_flags = AI_PASSIVE; // AI_CANONNAME;
-
-  rm_status = getaddrinfo(NULL, rm_ip->port_num, &rm_hints, &rm_info_list);
-  if (rm_status != 0) {
-    fprintf(stderr, "Error: failed to get address of host:\n%s\n",
-            gai_strerror(rm_status));
-    exit(EXIT_FAILURE);
-    //    handle_error("Error: failed to get addr of host\n");
-  }
-
-  // loop through all addresses until you can bind successfully
-  for (rm_it = rm_info_list; rm_it != NULL; rm_it = rm_it->ai_next) {
-    // socket
-    rm_fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
-
-    if (rm_fd == -1) {
-      continue;
-    }
-
-    // todo: understand the port reuse mechanism
-    int yes = 1;
-    if (setsockopt(rm_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      perror("setsockopt:");
-      exit(EXIT_FAILURE);
-    }
-
-    // bind
-    if (bind(rm_fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
-      break;
-    }
-    // if failed to bind
-    close(rm_fd);
-  }
-
-  if (rm_it == NULL) {
-    // no address succeeded
-    fprintf(stderr, "Error: failed to bind to any address retrieved");
+  // server socket at port defined in input
+  int rm_fd = open_server_socket(NULL, rm_ip->port_num);
+  if (rm_fd == -1) {
+    fprintf(stderr, "Failed to listen on port %s\n", rm_ip->port_num);
     exit(EXIT_FAILURE);
   }
-
-  // listen
-  if (listen(rm_fd, LISTEN_BACKLOG) == -1) {
-    perror("Error: cannot listen on socket\n");
-    exit(EXIT_FAILURE);
-  }
-
-  printf("Listening on port %s\n", rm_ip->port_num); // remove
 
   struct sockaddr_storage player_addr;
   socklen_t player_addr_len = sizeof(player_addr);
@@ -178,7 +119,8 @@ int main(int argv, char *argc[]) {
     players_info[i].fd = player_fd;
     printf("player id:\t%lu\nsock_id:\t%d\n", i, players_info[i].fd); // remove
 
-    // send ("id:%lu|tot:%lu", i, rm_ip->num_players)
+    // 01 send "id:###|tot:###"
+    send_player_id_info(player_fd, i, rm_ip->num_players);
 
     // listen to <num_players> players
 
@@ -190,7 +132,8 @@ int main(int argv, char *argc[]) {
   // man select
 
   // close server
-  freeaddrinfo(rm_info_list);
+  /* freeaddrinfo(rm_info_list); */
+  free(rm_ip);
   close(rm_fd);
 
   return EXIT_SUCCESS;

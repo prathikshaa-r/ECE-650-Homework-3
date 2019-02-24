@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <time.h>
@@ -44,37 +45,41 @@ typedef struct _player_inputs_t {
 
 typedef struct _player_info_t {
   int fd;
-  char *hostname;
-  char *port;
+  const char *hostname;
+  const char *port;
   struct _player_info_t *left;
   struct _player_info_t *right;
 } player_info_t;
 
 /*----------------server and client socket------------------*/
-// open a socket connection that listens -- server side
-// implemented in potato.h
-// return socket fd
+int open_server_socket(const char *hostname, const char *port);
+int open_client_socket(const char *server_hostname, const char *server_port);
 
-int open_server_socket(char *hostname, char *port);
-
-// open a socket connection to connnect to specified server
-// implemented in potato.h
-
-int open_client_socket(char *server_hostname, char *server_port);
+void send_all(int fd, char *buf, size_t size); // todo: write this func
 /*-----------------------------------------------------------*/
 
 /*-----------------------parsing functions-------------------*/
-// ringmaster inputs
+// ringmaster.c - ringmaster inputs
 void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs);
 
-// player inputs
+// player.c - player inputs
 void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs);
 
-// string to number conversion function -- implemented in potato.h
-size_t str_to_num(char *str);
+// potato.h - string to number conversion function
+size_t str_to_num(const char *str);
 
-// parse messsages from ringmaster -- implemented in potato.h
+// potato.h - parse messsages from ringmaster
 void parse_msgs(char *msg, char *results[], size_t num_fields);
+/*-------------------------------------------------------------*/
+
+/*----------------------------Player---------------------------*/
+// "hostname~###|port~###|"
+void send_player_info(int listener_fd, int send_to_fd);
+/*-------------------------------------------------------------*/
+
+/*------------------------Ringmaster---------------------------*/
+// "id~##|tot~##|"
+void send_player_id_info(int fd, size_t player_id, size_t num_players);
 /*-------------------------------------------------------------*/
 
 /*----------------Function Implementations---------------------*/
@@ -93,7 +98,7 @@ void parse_msgs(char *msg, char *results[], size_t num_fields) {
     }
 
     printf("Field %lu:\t%s\n", j, field);
-    // parse field to get value using ':'
+    // parse field to get value using '~'
     for (str2 = field;; str2 = NULL) {
       value = n_value;
       n_value = strtok_r(str2, t2, &saveptr2);
@@ -113,7 +118,7 @@ void parse_msgs(char *msg, char *results[], size_t num_fields) {
 
 // todo: is the parse_input function vulnerable to buffer overflow due to
 // dynamic memory alloc?
-size_t str_to_num(char *str) {
+size_t str_to_num(const char *str) {
   printf("string: %s\n", str);
   // use strtoul
   char *endptr;
@@ -138,7 +143,7 @@ size_t str_to_num(char *str) {
   return val;
 }
 
-int open_server_socket(char *hostname, char *port) {
+int open_server_socket(const char *hostname, const char *port) {
   assert(hostname == NULL); // for server socket
   str_to_num(port);
 
@@ -156,6 +161,7 @@ int open_server_socket(char *hostname, char *port) {
 
   if (status != 0) {
     fprintf(stderr, "Error: getaddrinfo\n%s", gai_strerror(status));
+    freeaddrinfo(addr_list);
     return -1;
   }
 
@@ -172,6 +178,7 @@ int open_server_socket(char *hostname, char *port) {
     int yes = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
       perror("Error:setsockopt\n");
+      freeaddrinfo(addr_list);
       return -1;
     }
 
@@ -188,20 +195,23 @@ int open_server_socket(char *hostname, char *port) {
 
   if (addr_iterator == NULL) {
     fprintf(stderr, "Error: failed to bind to any of the addresses retrieved");
+    freeaddrinfo(addr_list);
     return -1;
   }
 
   // listen
   if (listen(fd, LISTEN_BACKLOG) == -1) {
     perror("Error: cannot listen on socket\n");
+    freeaddrinfo(addr_list);
     return -1;
   }
 
   printf("Listening on port %s\n", port); // remove
+  freeaddrinfo(addr_list);
   return fd;
 }
 
-int open_client_socket(char *server_hostname, char *server_port) {
+int open_client_socket(const char *server_hostname, const char *server_port) {
   int fd;
   int status;
   struct addrinfo hints;
@@ -215,6 +225,7 @@ int open_client_socket(char *server_hostname, char *server_port) {
   status = getaddrinfo(server_hostname, server_port, &hints, &addr_list);
   if (status != 0) {
     perror("ERROR: getaddrinfo\n");
+    freeaddrinfo(addr_list);
     return -1;
   }
 
@@ -227,6 +238,7 @@ int open_client_socket(char *server_hostname, char *server_port) {
     int yes = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
       perror("ERROR: sersockopt\n");
+      freeaddrinfo(addr_list);
       return -1;
     }
 
@@ -238,8 +250,76 @@ int open_client_socket(char *server_hostname, char *server_port) {
     close(fd);
   }
 
+  freeaddrinfo(addr_list);
   return fd;
 }
+
+void send_player_info(int listener_fd, int send_to_fd) {
+  // hostname~###|port~###|
+
+  struct sockaddr_in listen_addr;
+  socklen_t listen_addr_len = sizeof(listen_addr);
+
+  int sockname_status = getsockname(
+      listener_fd, (struct sockaddr *)&listen_addr, &listen_addr_len);
+
+  if (sockname_status == -1) {
+    perror("getsockname:");
+    exit(EXIT_FAILURE);
+  }
+
+  size_t len = SHORT_MSG_SIZE;
+  char my_hostname[len]; // = NULL;
+  if (gethostname(my_hostname, len) != 0) {
+    perror("Failed to get host name.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (my_hostname[len - 1] != '\0') {
+    printf("hostname longer than %lu characters:%s\n", len, my_hostname);
+  }
+  printf("hostname:\t%s\n", my_hostname);
+  int my_port = ntohs(listen_addr.sin_port);
+
+  printf("Listening on port %d\n", my_port);
+
+  char buf_my_serv_info[SHORT_MSG_SIZE];
+  len = SHORT_MSG_SIZE;
+  memset(&buf_my_serv_info, 0, len);
+  if (snprintf(buf_my_serv_info, len, "hostname~%s|port~%d|", my_hostname,
+               my_port) < 0) {
+    fprintf(stderr, "building string using snprintf failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (send(send_to_fd, buf_my_serv_info, len, 0) == -1) {
+    perror("Error: sending player server info:\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return;
+}
+
+void send_player_id_info(int fd, size_t player_id, size_t num_players) {
+  // id~###|tot~###
+
+  size_t len = SHORT_MSG_SIZE;
+  char msg_buf[len];
+  memset(&msg_buf, 0, len);
+
+  if (snprintf(msg_buf, len, "id~%lu|tot~%lu|", player_id, num_players) < 0) {
+    fprintf(stderr, "building id string using snprintf failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (send(fd, msg_buf, len, 0) == -1) {
+    perror("Error: sending init msg to players\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return;
+}
+
 /*---------------------end implementations----------------------*/
 
 #endif
