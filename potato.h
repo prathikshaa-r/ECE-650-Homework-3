@@ -11,6 +11,7 @@
 #ifndef __POTATO_H__
 #define __POTATO_H__
 
+#define SHORT_MSG_SIZE 512
 #define LISTEN_BACKLOG 100
 
 #include <assert.h>
