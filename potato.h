@@ -45,8 +45,8 @@ typedef struct _player_inputs_t {
 
 typedef struct _player_info_t {
   int fd;
-  const char *hostname;
-  const char *port;
+  char hostname[SHORT_MSG_SIZE];
+  char port[SHORT_MSG_SIZE];
   struct _player_info_t *left;
   struct _player_info_t *right;
 } player_info_t;
@@ -73,13 +73,19 @@ void parse_msgs(char *msg, char *results[], size_t num_fields);
 /*-------------------------------------------------------------*/
 
 /*----------------------------Player---------------------------*/
+// "id~##|tot~##|"
+void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr);
+
 // "hostname~###|port~###|"
-void send_player_info(int listener_fd, int send_to_fd);
+void send_player_port(int listener_fd, int send_to_fd);
 /*-------------------------------------------------------------*/
 
 /*------------------------Ringmaster---------------------------*/
 // "id~##|tot~##|"
-void send_player_id_info(int fd, size_t player_id, size_t num_players);
+void send_player_id_tot(int fd, size_t player_id, size_t num_players);
+
+// "hostname~###|port~###|"
+// void get_player_host(int player_fd, char **hostname, char **port);
 /*-------------------------------------------------------------*/
 
 /*----------------Function Implementations---------------------*/
@@ -254,7 +260,7 @@ int open_client_socket(const char *server_hostname, const char *server_port) {
   return fd;
 }
 
-void send_player_info(int listener_fd, int send_to_fd) {
+void send_player_port(int listener_fd, int send_to_fd) {
   // hostname~###|port~###|
 
   struct sockaddr_in listen_addr;
@@ -300,7 +306,7 @@ void send_player_info(int listener_fd, int send_to_fd) {
   return;
 }
 
-void send_player_id_info(int fd, size_t player_id, size_t num_players) {
+void send_player_id_tot(int fd, size_t player_id, size_t num_players) {
   // id~###|tot~###
 
   size_t len = SHORT_MSG_SIZE;

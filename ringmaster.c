@@ -80,7 +80,45 @@ void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
 // learning comment: looks like void functions set perror and functons that
 // actually return a value like size_t return -1 for error
 
+void get_player_host(int player_fd, char *hostname, char *port) {
+  ssize_t recv_status;
+  char buffer[SHORT_MSG_SIZE];
+  char *arr[2];
+  /* char *hostname = NULL; */
+  /* char *port = NULL; */
+
+  recv_status = recv(player_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
+  if (recv_status == -1) {
+    fprintf(stderr, "Failed to recv data");
+    exit(EXIT_FAILURE);
+  }
+
+  if (recv_status == 0) {
+    fprintf(stderr, "Connection closed by server\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Recv returned %ld\n", recv_status); // remove
+  buffer[recv_status] = '\0';
+  printf("Server said:\t%s\n", buffer); // remove
+
+  parse_msgs(buffer, arr, 2);
+
+  strncpy(hostname, arr[0], SHORT_MSG_SIZE);
+  strncpy(port, arr[1], SHORT_MSG_SIZE);
+
+  printf("hostname:\t%s\n"
+         "port:\t%s\n",
+         hostname, port); // remove
+
+  /* *id_ptr = id; */
+  /* *tot_ptr = tot; */
+
+  return;
+}
+
 int main(int argv, char *argc[]) {
+
   // parse input
   ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
   parse_rm_input(argv, argc, rm_ip);
@@ -107,7 +145,7 @@ int main(int argv, char *argc[]) {
   /*     &players_info[rm_ip->num_players - 1]; // player id num_players - 1 */
 
   // accept incoming connections
-  for (size_t i = 0; i < rm_ip->num_players; i++) {
+  for (size_t id = 0; id < rm_ip->num_players; id++) {
 
     int player_fd =
         accept(rm_fd, (struct sockaddr *)&player_addr, &player_addr_len);
@@ -116,17 +154,19 @@ int main(int argv, char *argc[]) {
       perror("Error: failed to accept connection on socket\n");
     }
 
-    players_info[i].fd = player_fd;
-    printf("player id:\t%lu\nsock_id:\t%d\n", i, players_info[i].fd); // remove
+    players_info[id].fd = player_fd;
+    printf("player id:\t%lu\n"
+           "sock_id:\t%d\n",
+           id,
+           players_info[id].fd); // remove
 
-    // 01 send "id:###|tot:###"
-    send_player_id_info(player_fd, i, rm_ip->num_players);
-
-    // listen to <num_players> players
-
-    // send player ("id~%lu|tot~%lu", i, rm_ip->num_players)
+    // 01 send "id:###|tot:###|"
+    send_player_id_tot(player_fd, id, rm_ip->num_players);
 
     // recv their listening port
+    // 02 recv "hostname~###|port~###|"
+    /* get_player_host(player_fd, players_info[id].hostname, */
+    /*                 players_info[id].port); */
   }
 
   // man select
