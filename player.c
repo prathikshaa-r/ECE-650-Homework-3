@@ -98,7 +98,6 @@ int main(int argv, char *argc[]) {
     switch (ret) {
     case 0:
       // accept
-
       l_fd = accept(server_fd, (struct sockaddr *)&r_player_addr,
                     &r_player_addr_len);
       break;
