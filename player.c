@@ -40,39 +40,6 @@ void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs) {
   return;
 }
 
-void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr) {
-  ssize_t recv_status;
-  char buffer[SHORT_MSG_SIZE];
-  char *arr[2];
-  size_t id, tot;
-
-  recv_status = recv(rm_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
-  if (recv_status == -1) {
-    fprintf(stderr, "Failed to recv data\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if (recv_status == 0) {
-    fprintf(stderr, "Connection closed by server\n");
-    exit(EXIT_FAILURE);
-  }
-
-  printf("Recv returned %ld\n", recv_status); // remove
-  buffer[recv_status] = '\0';
-  printf("Server said:\t%s\n", buffer); // remove
-
-  parse_msgs(buffer, arr, 2);
-  id = str_to_num(arr[0]);
-  tot = str_to_num(arr[1]);
-  printf("id:\t%lu\n"
-         "tot:\t%lu\n",
-         id, tot); // remove
-
-  *id_ptr = id;
-  *tot_ptr = tot;
-  return;
-}
-
 int main(int argv, char *argc[]) {
   /* rm_fd = client_socket --> connect to ringmaster
      l_fd = server_socket --> accept connection from left player
@@ -104,13 +71,14 @@ int main(int argv, char *argc[]) {
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
   // 02 send "hostname~###|port~###|"
-  /* l_fd = open_server_socket(NULL, 0); // bind to and listen on a free port */
-  /* if (l_fd == -1) { */
-  /*   fprintf(stderr, "Player failed to open a server socket.\n"); */
-  /*   exit(EXIT_FAILURE); */
-  /* } */
+  l_fd = open_server_socket(NULL, "0"); // bind to and listen on a free port
 
-  /* send_player_port(l_fd, rm_fd); // send port number to ringmaster */
+  if (l_fd == -1) {
+    fprintf(stderr, "Player failed to open a server socket.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  send_player_port(l_fd, rm_fd); // send port number to ringmaster
 
   /* char *ack = "ACK"; */
   /* send(rm_fd, ack, strlen(ack), 0); */
@@ -119,7 +87,8 @@ int main(int argv, char *argc[]) {
   // recv "left_ip:###|left_port:###|right_ip:###|right_port:###"
 
   r_fd = 0;
-  l_fd = 0;
+  //  l_fd = 0;
+  printf("rm_fd = %d\n", rm_fd);
   printf("r_fd = %d\n", r_fd);
   printf("l_fd = %d\n", l_fd);
 

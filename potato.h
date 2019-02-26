@@ -44,6 +44,7 @@ typedef struct _player_inputs_t {
 } player_inputs_t;
 
 typedef struct _player_info_t {
+  int id;
   int fd;
   char hostname[SHORT_MSG_SIZE];
   char port[SHORT_MSG_SIZE];
@@ -55,7 +56,7 @@ typedef struct _player_info_t {
 int open_server_socket(const char *hostname, const char *port);
 int open_client_socket(const char *server_hostname, const char *server_port);
 
-void send_all(int fd, char *buf, size_t size); // todo: write this func
+void send_all(int fd, char *buf, size_t size); // todo: test this func
 /*-----------------------------------------------------------*/
 
 /*-----------------------parsing functions-------------------*/
@@ -78,6 +79,9 @@ void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr);
 
 // "hostname~###|port~###|"
 void send_player_port(int listener_fd, int send_to_fd);
+
+// "r_hostname~###|r_port~###|"
+void get_right_neigh(int player_fd, char *hostname, char *port); // todo: test
 /*-------------------------------------------------------------*/
 
 /*------------------------Ringmaster---------------------------*/
@@ -85,7 +89,10 @@ void send_player_port(int listener_fd, int send_to_fd);
 void send_player_id_tot(int fd, size_t player_id, size_t num_players);
 
 // "hostname~###|port~###|"
-// void get_player_host(int player_fd, char **hostname, char **port);
+void get_player_host(int player_fd, char *hostname, char *port);
+
+// "r_hostname~###|r_port~###|"
+void send_right_neigh(int player_fd, player_info_t *r_neigh); // todo: test
 /*-------------------------------------------------------------*/
 
 /*----------------Function Implementations---------------------*/
@@ -260,6 +267,20 @@ int open_client_socket(const char *server_hostname, const char *server_port) {
   return fd;
 }
 
+void send_all(int fd, char *buf, size_t size) {
+  ssize_t send_size = size;
+  while (send_size > 0) {
+    ssize_t sent = send(fd, buf, send_size, 0);
+    if (sent == -1) {
+      perror("Error: sendall\n");
+      exit(EXIT_FAILURE);
+    }
+
+    buf += sent;
+    send_size -= sent;
+  }
+}
+
 void send_player_port(int listener_fd, int send_to_fd) {
   // hostname~###|port~###|
 
@@ -298,6 +319,8 @@ void send_player_port(int listener_fd, int send_to_fd) {
     exit(EXIT_FAILURE);
   }
 
+  printf("send_player_port:\n%s\n\n", buf_my_serv_info);
+
   if (send(send_to_fd, buf_my_serv_info, len, 0) == -1) {
     perror("Error: sending player server info:\n");
     exit(EXIT_FAILURE);
@@ -314,7 +337,7 @@ void send_player_id_tot(int fd, size_t player_id, size_t num_players) {
   memset(&msg_buf, 0, len);
 
   if (snprintf(msg_buf, len, "id~%lu|tot~%lu|", player_id, num_players) < 0) {
-    fprintf(stderr, "building id string using snprintf failed.\n");
+    fprintf(stderr, "Error: building id string using snprintf failed.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -326,6 +349,104 @@ void send_player_id_tot(int fd, size_t player_id, size_t num_players) {
   return;
 }
 
+void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr) {
+  // id~###|tot~###
+
+  ssize_t recv_status;
+  char buffer[SHORT_MSG_SIZE];
+  char *arr[2];
+  size_t id, tot;
+
+  recv_status = recv(rm_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
+  if (recv_status == -1) {
+    fprintf(stderr, "Failed to recv data\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (recv_status == 0) {
+    fprintf(stderr, "Connection closed by server\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Recv returned %ld\n", recv_status); // remove
+  buffer[recv_status] = '\0';
+  printf("Server said:\t%s\n", buffer); // remove
+
+  parse_msgs(buffer, arr, 2);
+  id = str_to_num(arr[0]);
+  tot = str_to_num(arr[1]);
+  printf("id:\t%lu\n"
+         "tot:\t%lu\n",
+         id, tot); // remove
+
+  *id_ptr = id;
+  *tot_ptr = tot;
+  return;
+}
+
+void get_player_host(int player_fd, char *hostname, char *port) {
+  // hostname~###|port~###|
+
+  ssize_t recv_status;
+  char buffer[SHORT_MSG_SIZE];
+  char *arr[2];
+
+  recv_status = recv(player_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
+  if (recv_status == -1) {
+    fprintf(stderr, "Failed to recv data");
+    exit(EXIT_FAILURE);
+  }
+
+  if (recv_status == 0) {
+    fprintf(stderr, "Connection closed by server\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Recv returned %ld\n", recv_status); // remove
+  buffer[recv_status] = '\0';
+  printf("Server said:\t%s\n", buffer); // remove
+
+  parse_msgs(buffer, arr, 2);
+
+  strncpy(hostname, arr[0], SHORT_MSG_SIZE);
+  strncpy(port, arr[1], SHORT_MSG_SIZE);
+
+  printf("hostname:\t%s\n"
+         "port:\t%s\n",
+         hostname, port); // remove
+
+  return;
+}
+
+void send_right_neigh(int player_fd, player_info_t *r_neigh) {
+  // r_hostname~###|r_port~###|
+
+  size_t len = SHORT_MSG_SIZE;
+  char msg_buf[len];
+  memset(&msg_buf, 0, len);
+
+  if (snprintf(msg_buf, len, "r_hostname~%s|r_port~%s|", r_neigh->hostname,
+               r_neigh->port) < 0) {
+    fprintf(stderr,
+            "Error: right neigh info building using snprintf failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (send(player_fd, msg_buf, len, 0) == -1) {
+    perror("Error: sending init msg to players\n");
+    exit(EXIT_FAILURE);
+  }
+
+  return;
+}
+
+void get_right_neigh(int rm_fd, char *r_hostname, char *r_port) {
+  // r_hostname~###|r_port~###|
+
+  get_player_host(rm_fd, r_hostname, r_port);
+
+  return;
+}
 /*---------------------end implementations----------------------*/
 
 #endif
