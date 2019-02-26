@@ -69,8 +69,8 @@ void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs);
 // potato.h - string to number conversion function
 size_t str_to_num(const char *str);
 
-// potato.h - parse messsages from ringmaster
-void parse_msgs(char *msg, char *results[], size_t num_fields);
+// potato.h - parse messsages from ringmaster - return num of fields found
+size_t parse_msgs(char *msg, char *results[], size_t num_fields);
 /*-------------------------------------------------------------*/
 
 /*----------------------------Player---------------------------*/
@@ -81,7 +81,10 @@ void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr);
 void send_player_port(int listener_fd, int send_to_fd);
 
 // "r_hostname~###|r_port~###|"
-void get_right_neigh(int player_fd, char *hostname, char *port); // todo: test
+int get_right_neigh(int player_fd, char *hostname, char *port); // todo: test
+
+// "r~ready|"
+void send_ready_signal(int rm_fd); // todo: write
 /*-------------------------------------------------------------*/
 
 /*------------------------Ringmaster---------------------------*/
@@ -89,14 +92,17 @@ void get_right_neigh(int player_fd, char *hostname, char *port); // todo: test
 void send_player_id_tot(int fd, size_t player_id, size_t num_players);
 
 // "hostname~###|port~###|"
-void get_player_host(int player_fd, char *hostname, char *port);
+int get_player_host(int player_fd, char *hostname, char *port);
 
 // "r_hostname~###|r_port~###|"
 void send_right_neigh(int player_fd, player_info_t *r_neigh); // todo: test
+
+// "a~accept|"
+void send_accept_signal(int player_fd); // todo: write
 /*-------------------------------------------------------------*/
 
 /*----------------Function Implementations---------------------*/
-void parse_msgs(char *msg, char *results[], size_t num_fields) {
+size_t parse_msgs(char *msg, char *results[], size_t num_fields) {
   // find the fields using pipe -- |
   char *str1, *str2, *field, *value, *n_value;
   char *t1 = "|";
@@ -119,6 +125,7 @@ void parse_msgs(char *msg, char *results[], size_t num_fields) {
         break;
       }
     }
+
     printf("n_value:\t%s\n", n_value);
     printf("Value:\t%s\n", value);
     results[j] = value;
@@ -126,7 +133,8 @@ void parse_msgs(char *msg, char *results[], size_t num_fields) {
   if (j != num_fields) {
     fprintf(stderr, "expected %lu fields, found only %lu\n", num_fields, j);
   }
-  return;
+
+  return j; // return num of fields found
 }
 
 // todo: is the parse_input function vulnerable to buffer overflow due to
@@ -384,7 +392,7 @@ void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr) {
   return;
 }
 
-void get_player_host(int player_fd, char *hostname, char *port) {
+int get_player_host(int player_fd, char *hostname, char *port) {
   // hostname~###|port~###|
 
   ssize_t recv_status;
@@ -406,16 +414,22 @@ void get_player_host(int player_fd, char *hostname, char *port) {
   buffer[recv_status] = '\0';
   printf("Server said:\t%s\n", buffer); // remove
 
-  parse_msgs(buffer, arr, 2);
+  size_t num_fields = parse_msgs(buffer, arr, 2);
 
-  strncpy(hostname, arr[0], SHORT_MSG_SIZE);
-  strncpy(port, arr[1], SHORT_MSG_SIZE);
+  if (num_fields == 2) {
 
-  printf("hostname:\t%s\n"
-         "port:\t%s\n",
-         hostname, port); // remove
+    strncpy(hostname, arr[0], SHORT_MSG_SIZE);
+    strncpy(port, arr[1], SHORT_MSG_SIZE);
 
-  return;
+    printf("hostname:\t%s\n"
+           "port:\t%s\n",
+           hostname, port); // remove
+  } else if (num_fields == 1) {
+    // check accept
+    return 0;
+  }
+
+  return 1;
 }
 
 void send_right_neigh(int player_fd, player_info_t *r_neigh) {
@@ -440,11 +454,14 @@ void send_right_neigh(int player_fd, player_info_t *r_neigh) {
   return;
 }
 
-void get_right_neigh(int rm_fd, char *r_hostname, char *r_port) {
+int get_right_neigh(int rm_fd, char *r_hostname, char *r_port) {
   // r_hostname~###|r_port~###|
 
-  get_player_host(rm_fd, r_hostname, r_port);
+  return get_player_host(rm_fd, r_hostname, r_port);
+}
 
+void send_accept_signal(int player_fd) {
+  //
   return;
 }
 /*---------------------end implementations----------------------*/

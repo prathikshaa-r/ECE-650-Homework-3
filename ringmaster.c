@@ -154,6 +154,14 @@ int main(int argv, char *argc[]) {
   }
 
   // send neighbour info to all players
+  for (size_t id = 0; id < rm_ip->num_players; id++) {
+    size_t right = (id == (rm_ip->num_players - 1)) ? 0 : (id + 1);
+
+    // send second one in pair "a~accept|" signal to let them accept connection
+
+    // send first one in pair r_neigh info to connect to
+    send_right_neigh(players_info[id].fd, &players_info[right]);
+  }
 
   // man select
 
