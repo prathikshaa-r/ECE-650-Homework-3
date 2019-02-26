@@ -195,6 +195,12 @@ int main(int argv, char *argc[]) {
     }
   }
 
+  // seed random in ringmaster
+  srand((unsigned int)time(NULL));
+  int random = rand() % (rm_ip->num_players);
+
+  printf("Ready to start the game, sending potato to player %d.\n", random);
+
   // man select
 
   // close server
