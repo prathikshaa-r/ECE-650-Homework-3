@@ -58,7 +58,7 @@ typedef struct _player_info_t {
 int open_server_socket(const char *hostname, const char *port);
 int open_client_socket(const char *server_hostname, const char *server_port);
 
-void send_all(int fd, char *buf, size_t size); // todo: test
+int send_all(int fd, char *buf, size_t size); // todo: test
 
 void send_signal(int sig, int send_to_fd); // 0 - accept, 1 - ready, 2 - end
 
@@ -291,18 +291,20 @@ int open_client_socket(const char *server_hostname, const char *server_port) {
   return fd;
 }
 
-void send_all(int fd, char *buf, size_t size) {
+int send_all(int fd, char *buf, size_t size) {
   ssize_t send_size = size;
   while (send_size > 0) {
     ssize_t sent = send(fd, buf, send_size, 0);
     if (sent == -1) {
       perror("Error: sendall\n");
-      exit(EXIT_FAILURE);
+      return -1;
+      // exit(EXIT_FAILURE);
     }
 
     buf += sent;
     send_size -= sent;
   }
+  return 0;
 }
 
 void send_player_port(int listener_fd, int send_to_fd) {
@@ -345,8 +347,8 @@ void send_player_port(int listener_fd, int send_to_fd) {
 
   printf("send_player_port:\n%s\n\n", buf_my_serv_info);
 
-  if (send(send_to_fd, buf_my_serv_info, len, 0) == -1) {
-    perror("Error: sending player server info:\n");
+  if (send_all(send_to_fd, buf_my_serv_info, len) == -1) {
+    fprintf(stderr, "Error: sending player server info:\n");
     exit(EXIT_FAILURE);
   }
 
@@ -365,8 +367,8 @@ void send_player_id_tot(int fd, size_t player_id, size_t num_players) {
     exit(EXIT_FAILURE);
   }
 
-  if (send(fd, msg_buf, len, 0) == -1) {
-    perror("Error: sending init msg to players\n");
+  if (send_all(fd, msg_buf, len) == -1) {
+    fprintf(stderr, "Error: sending init msg to players\n");
     exit(EXIT_FAILURE);
   }
 
@@ -475,8 +477,8 @@ void send_right_neigh(int player_fd, player_info_t *r_neigh) {
     exit(EXIT_FAILURE);
   }
 
-  if (send(player_fd, msg_buf, len, 0) == -1) {
-    perror("Error: sending init msg to players\n");
+  if (send_all(player_fd, msg_buf, len) == -1) {
+    fprintf(stderr, "Error: sending init msg to players\n");
     exit(EXIT_FAILURE);
   }
 
