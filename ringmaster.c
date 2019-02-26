@@ -96,6 +96,10 @@ int main(int argv, char *argc[]) {
          "Hops = %lu\n",
          rm_ip->num_players, rm_ip->num_hops);
 
+  if (rm_ip->num_hops == 0) {
+    return EXIT_SUCCESS;
+  }
+
   // server socket at port defined in input
   int rm_fd = open_server_socket(NULL, rm_ip->port_num);
   if (rm_fd == -1) {
@@ -108,10 +112,6 @@ int main(int argv, char *argc[]) {
 
   // struct array for storing players info
   player_info_t players_info[rm_ip->num_players];
-
-  /* player_info_t *ring_head = &players_info[0]; // player id 0 */
-  /* player_info_t *ring_tail = */
-  /*     &players_info[rm_ip->num_players - 1]; // player id num_players - 1 */
 
   // accept incoming connections
   for (size_t id = 0; id < rm_ip->num_players; id++) {
@@ -181,18 +181,6 @@ int main(int argv, char *argc[]) {
 
   // get ready signal from all players
   for (size_t id = 0; id < rm_ip->num_players; id++) {
-
-    /* int fd; */
-    /* read_fds = master; */
-
-    /* if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1) { */
-    /*   perror("Error: select to get ready signal\n"); */
-    /*   exit(EXIT_FAILURE); */
-    /* } */
-
-    /* if(FD_ISSET(players_info[id].fd, &read_fds)){ */
-    /*   fd = ; */
-    /* } */
 
     int ret = get_player_host(players_info[id].fd, NULL, NULL);
     if (ret == 1) {

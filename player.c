@@ -197,12 +197,7 @@ int main(int argv, char *argc[]) {
       break;
     }
 
-    /* char id_str[8]; */
-    /* snprintf(id_str, 8, ",%lu", id); */
-
     num_hops--;
-    /* strcat(trace, id_str); */
-    /* trace[trace_len - 1] = '\0'; */
 
     char potato_buf[POTATO_SIZE];
     memset(&potato_buf, 0, POTATO_SIZE);

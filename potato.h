@@ -424,7 +424,7 @@ int get_player_host(int player_fd, char *hostname, char *port) {
 
   recv_status = recv(player_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
   if (recv_status == -1) {
-    fprintf(stderr, "Failed to recv data");
+    fprintf(stderr, "Failed to recv data\n");
     exit(EXIT_FAILURE);
   }
 
