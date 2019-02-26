@@ -76,6 +76,17 @@ size_t str_to_num(const char *str);
 
 // potato.h - parse messsages from ringmaster - return num of fields found
 size_t parse_msgs(char *msg, char *results[], size_t num_fields);
+
+// potato.h - send potato
+void send_potato(int send_to_fd, size_t num_hops, size_t my_id);
+
+// potato.h - get potato
+void get_potato();
+// check if END signal
+// get num_hops - dec num_hops
+// if num_hops == 0, "I'm it" send_potato to ringmaster
+// else
+
 /*-------------------------------------------------------------*/
 
 /*----------------------------Player---------------------------*/
@@ -366,7 +377,9 @@ void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr) {
   // id~###|tot~###
 
   ssize_t recv_status;
-  char buffer[SHORT_MSG_SIZE];
+  size_t len = SHORT_MSG_SIZE;
+  char buffer[len];
+  memset(&buffer, 0, len);
   char *arr[2];
   size_t id, tot;
 
@@ -401,7 +414,9 @@ int get_player_host(int player_fd, char *hostname, char *port) {
   // hostname~###|port~###|
 
   ssize_t recv_status;
-  char buffer[SHORT_MSG_SIZE];
+  size_t len = SHORT_MSG_SIZE;
+  char buffer[len];
+  memset(&buffer, 0, len);
   char *arr[2];
 
   recv_status = recv(player_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
@@ -430,11 +445,20 @@ int get_player_host(int player_fd, char *hostname, char *port) {
            "port:\t%s\n",
            hostname, port); // remove
   } else if (num_fields == 1) {
+    printf("received:\t%s\n", arr[0]); // remove
+
     // check accept
-    return 0;
+    if (!(strcmp(arr[0], "accept"))) {
+      return 0;
+    } else if (!(strcmp(arr[0], "ready"))) {
+      return 1;
+    } else if (!(strcmp(arr[0], "end"))) {
+      return 2; // not sure about this
+    }
   }
 
-  return 1;
+  // return 3 if "hostname, port" found
+  return 3;
 }
 
 void send_right_neigh(int player_fd, player_info_t *r_neigh) {

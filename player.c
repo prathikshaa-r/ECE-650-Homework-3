@@ -91,8 +91,8 @@ int main(int argv, char *argc[]) {
   /* char *ack = "ACK"; */
   /* send(rm_fd, ack, strlen(ack), 0); */
 
-  // get neighbours info in stream
-  // recv "left_ip:###|left_port:###|right_ip:###|right_port:###"
+  // connect to neighbours to receive potato
+  // recv "r_hostname~###|r_port~###|"
   for (int i = 0; i < 2; i++) {
     int ret = get_right_neigh(rm_fd, r_hostname, r_port);
     switch (ret) {
@@ -101,7 +101,7 @@ int main(int argv, char *argc[]) {
       l_fd = accept(server_fd, (struct sockaddr *)&r_player_addr,
                     &r_player_addr_len);
       break;
-    case 1:
+    case 3:
       // connect to right_neigh
       r_fd = open_client_socket(r_hostname, r_port);
       break;
@@ -119,8 +119,10 @@ int main(int argv, char *argc[]) {
   printf("r_fd = %d\n", r_fd);
   printf("l_fd = %d\n", l_fd);
 
-  // connect to neighbours to receive potato | may come from ringmaster or
-  // neighbours
+  // send "r~ready|" to ringmaster
+  send_ready_signal(rm_fd);
+
+  // recv potato or END signal - may come from ringmaster or  neighbours
 
   // parse potato stream
 

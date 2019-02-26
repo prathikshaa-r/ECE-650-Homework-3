@@ -77,6 +77,12 @@ void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
 
 int main(int argv, char *argc[]) {
 
+  int fd_max;
+  fd_set master;
+  fd_set read_fds;
+  FD_ZERO(&master);
+  FD_ZERO(&read_fds);
+
   // parse input
   ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
   parse_rm_input(argv, argc, rm_ip);
@@ -110,6 +116,13 @@ int main(int argv, char *argc[]) {
 
     if (player_fd == -1) {
       perror("Error: failed to accept connection on socket\n");
+    }
+
+    // include player_fd in set
+    FD_SET(player_fd, &master);
+    // reset fd_max with latest player_fd
+    if (player_fd > fd_max) {
+      fd_max = player_fd;
     }
 
     players_info[id].id = id;
@@ -157,6 +170,29 @@ int main(int argv, char *argc[]) {
 
     // send first one in pair r_neigh info to connect to
     send_right_neigh(players_info[id].fd, &players_info[right]);
+  }
+
+  // master fds
+
+  // get ready signal from all players
+  for (size_t id = 0; id < rm_ip->num_players; id++) {
+
+    /* int fd; */
+    /* read_fds = master; */
+
+    /* if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1) { */
+    /*   perror("Error: select to get ready signal\n"); */
+    /*   exit(EXIT_FAILURE); */
+    /* } */
+
+    /* if(FD_ISSET(players_info[id].fd, &read_fds)){ */
+    /*   fd = ; */
+    /* } */
+
+    int ret = get_player_host(players_info[id].fd, NULL, NULL);
+    if (ret == 1) {
+      printf("recvd ready signal from player %d\n", players_info[id].id);
+    }
   }
 
   // man select
