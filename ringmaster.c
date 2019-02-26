@@ -21,11 +21,6 @@
 #define MIN_HOPS 0
 #define MIN_PLAYERS 1
 
-#define POTATO_SIZE 5120
-#define SHORT_MSG_SIZE 512
-
-#define LISTEN_BACKLOG 100 // 1000? more?
-
 #include "potato.h"
 #include <errno.h>
 #include <unistd.h>
@@ -158,6 +153,7 @@ int main(int argv, char *argc[]) {
     size_t right = (id == (rm_ip->num_players - 1)) ? 0 : (id + 1);
 
     // send second one in pair "a~accept|" signal to let them accept connection
+    send_accept_signal(players_info[right].fd);
 
     // send first one in pair r_neigh info to connect to
     send_right_neigh(players_info[id].fd, &players_info[right]);

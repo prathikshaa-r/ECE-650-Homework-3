@@ -42,12 +42,19 @@ void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs) {
 
 int main(int argv, char *argc[]) {
   /* rm_fd = client_socket --> connect to ringmaster
-     l_fd = server_socket --> accept connection from left player
+     server_fd = server_socket --> accept connection from left player
+     l_fd = accepted fd on server_fd
      r_fd = client_socket --> connect to right player
    */
-  int rm_fd, l_fd, r_fd;
+  int rm_fd, server_fd, l_fd, r_fd;
   size_t id;
   size_t tot;
+
+  char r_hostname[SHORT_MSG_SIZE];
+  char r_port[SHORT_MSG_SIZE];
+
+  struct sockaddr_storage r_player_addr;
+  socklen_t r_player_addr_len = sizeof(r_player_addr);
 
   // parse inputs
   player_inputs_t *p_ip = malloc(sizeof(player_inputs_t)); // free
@@ -71,23 +78,44 @@ int main(int argv, char *argc[]) {
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
   // 02 send "hostname~###|port~###|"
-  l_fd = open_server_socket(NULL, "0"); // bind to and listen on a free port
+  server_fd =
+      open_server_socket(NULL, "0"); // bind to and listen on a free port
 
-  if (l_fd == -1) {
+  if (server_fd == -1) {
     fprintf(stderr, "Player failed to open a server socket.\n");
     exit(EXIT_FAILURE);
   }
 
-  send_player_port(l_fd, rm_fd); // send port number to ringmaster
+  send_player_port(server_fd, rm_fd); // send port number to ringmaster
 
   /* char *ack = "ACK"; */
   /* send(rm_fd, ack, strlen(ack), 0); */
 
   // get neighbours info in stream
   // recv "left_ip:###|left_port:###|right_ip:###|right_port:###"
+  for (int i = 0; i < 2; i++) {
+    int ret = get_right_neigh(rm_fd, r_hostname, r_port);
+    switch (ret) {
+    case 0:
+      // accept
 
-  r_fd = 0;
-  //  l_fd = 0;
+      l_fd = accept(server_fd, (struct sockaddr *)&r_player_addr,
+                    &r_player_addr_len);
+      break;
+    case 1:
+      // connect to right_neigh
+      r_fd = open_client_socket(r_hostname, r_port);
+      break;
+    default:
+      fprintf(stderr,
+              "Error: player id %lu recv neigh/accept: in valid value %d\n", id,
+              ret);
+      break;
+    }
+  }
+
+  // r_fd = 0;
+  // l_fd = 0;
   printf("rm_fd = %d\n", rm_fd);
   printf("r_fd = %d\n", r_fd);
   printf("l_fd = %d\n", l_fd);
