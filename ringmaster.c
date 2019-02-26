@@ -83,6 +83,11 @@ int main(int argv, char *argc[]) {
   FD_ZERO(&master);
   FD_ZERO(&read_fds);
 
+  size_t end_hops;
+  size_t trace_len = POTATO_SIZE - 4;
+  char trace[trace_len];
+  memset(&trace, 0, trace_len);
+
   // parse input
   ringmaster_inputs_t *rm_ip = malloc(sizeof(ringmaster_inputs_t)); // free
   parse_rm_input(argv, argc, rm_ip);
@@ -201,7 +206,66 @@ int main(int argv, char *argc[]) {
 
   printf("Ready to start the game, sending potato to player %d.\n", random);
 
+  /*-------------------------Send Potato to Player-------------------------*/
+  size_t len = POTATO_SIZE;
+  char hops[len];
+  memset(&hops, 0, len);
+
+  if (snprintf(hops, len, "%lu|", rm_ip->num_hops) < 0) {
+    fprintf(stderr, "Error: potato snprintf failed.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Potato:\n%s\n", hops); // remove
+
+  send_all(players_info[random].fd, hops, len);
+  /*------------------------------------------------------------------------*/
+
+  printf("Sent potato to socket %d.\n", players_info[random].fd);
   // man select
+  while (1) {
+    read_fds = master;
+    int ready = select(fd_max + 1, &read_fds, NULL, NULL, NULL);
+    if (ready == -1) {
+      perror("Error: select\n");
+      exit(EXIT_FAILURE);
+    } else if (ready == 0) {
+      printf("No player ready.\n"); // remove
+      continue;
+    } else if (ready != 1) {
+      fprintf(stderr,
+              "Error: Should receive final potato from only one player.\n"
+              "Ready:\t%d\n",
+              ready);
+      exit(EXIT_FAILURE);
+    }
+    // ready == 1
+    // end game
+    // receive final potato
+    int ready_fd = -1;
+    for (size_t id = 0; id < rm_ip->num_players; id++) {
+      if (FD_ISSET(players_info[id].fd, &read_fds)) {
+        ready_fd = players_info[id].fd;
+        break;
+      }
+    } // end for
+
+    if (ready_fd == -1) {
+      fprintf(stderr, "Error: Failed to identify the ready player.\n");
+      exit(EXIT_FAILURE);
+    }
+
+    get_potato(ready_fd, &end_hops, trace);
+    printf("Trace of potato:\n"
+           "%s\n",
+           trace);
+    break;
+
+  } // end while
+
+  for (size_t id = 0; id < rm_ip->num_players; id++) {
+    send_end_signal(players_info[id].fd);
+  }
 
   // close server
   /* freeaddrinfo(rm_info_list); */

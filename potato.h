@@ -78,10 +78,11 @@ size_t str_to_num(const char *str);
 size_t parse_msgs(char *msg, char *results[], size_t num_fields);
 
 // potato.h - send potato
-void send_potato(int send_to_fd, size_t num_hops, size_t my_id);
+// void send_potato(int send_to_fd, size_t num_hops, size_t my_id);
 
 // potato.h - get potato
-void get_potato();
+int get_potato(int get_from_fd, size_t *num_hops_ptr, char *trace);
+// returns 1 if end of game msg from ringmaster
 // check if END signal
 // get num_hops - dec num_hops
 // if num_hops == 0, "I'm it" send_potato to ringmaster
@@ -506,13 +507,13 @@ void send_signal(int sig, int send_to_fd) {
     break;
   case 1:
     if (snprintf(msg_buf, len, "r~ready|") < 0) {
-      fprintf(stderr, "Error: snprintf - sig accept\n");
+      fprintf(stderr, "Error: snprintf - sig ready\n");
       exit(EXIT_FAILURE);
     }
     break;
   case 2:
     if (snprintf(msg_buf, len, "e~end|") < 0) {
-      fprintf(stderr, "Error: snprintf - sig accept\n");
+      fprintf(stderr, "Error: snprintf - sig end\n");
       exit(EXIT_FAILURE);
     }
     break;
@@ -531,6 +532,72 @@ void send_ready_signal(int rm_fd) { send_signal(1, rm_fd); }
 
 // think about END signal once again later
 void send_end_signal(int player_fd) { send_signal(2, player_fd); }
+
+int get_potato(int get_from_fd, size_t *num_hops_ptr, char *trace) {
+  // "e~end|" or "###|##,##,##"
+  ssize_t recv_status;
+  size_t len = POTATO_SIZE;
+  char buffer[len];
+  memset(&buffer, 0, len);
+
+  //  size_t num_hops;
+  size_t trace_len = len - 4;
+  /* char trace[trace_len]; */
+  /* memset(&trace, 0, trace_len); */
+
+  recv_status = recv(get_from_fd, buffer, POTATO_SIZE, MSG_WAITALL);
+  if (recv_status == -1) {
+    fprintf(stderr, "Error: Failed to recv potato/end msg.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if (recv_status == 0) {
+    fprintf(stderr,
+            "Error: get_potato recv:"
+            " Connection closed by socket %d unexpectedly.\n",
+            get_from_fd);
+    exit(EXIT_FAILURE);
+  }
+
+  printf("Potato recv status:\t%ld\n", recv_status); // remove
+  printf("Received:\t%s\n", buffer);
+
+  /*-------------------------strtok-----------------------------*/
+  char *str1; //, *str2, *field, *value, *n_value;
+  char *t1 = "|";
+  // char *t2 = "~";
+  char *saveptr1; //, *saveptr2;
+  size_t j = 0;
+
+  for (j = 0, str1 = buffer;; j++, str1 = NULL) {
+    char *field = strtok_r(str1, t1, &saveptr1);
+    if (field == NULL) {
+      break;
+    }
+
+    if (j == 0) {
+      // check if end
+      if (!(strcmp(field, "e~end"))) {
+        // end game
+        return 1;
+      } else {
+        // num_hops
+        *num_hops_ptr = str_to_num(field);
+      }
+    } else if (j == 1) {
+      strncpy(trace, field, trace_len);
+    }
+
+    printf("Field %lu:\t%s\n", j, field);
+  }
+
+  /*------------------------------------------------------------*/
+  printf("num_hops:\t%ld\n"
+         "trace:\t%s\n",
+         *num_hops_ptr, trace);
+
+  return 0;
+}
 /*---------------------end implementations----------------------*/
 
 #endif
