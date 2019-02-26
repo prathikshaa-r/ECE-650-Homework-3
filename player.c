@@ -207,7 +207,11 @@ int main(int argv, char *argc[]) {
     char potato_buf[POTATO_SIZE];
     memset(&potato_buf, 0, POTATO_SIZE);
 
-    snprintf(potato_buf, POTATO_SIZE, "%lu|%s,%lu", num_hops, trace, id);
+    if (strcmp(trace, "")) {
+      snprintf(potato_buf, POTATO_SIZE, "%lu|%s,%lu", num_hops, trace, id);
+    } else {
+      snprintf(potato_buf, POTATO_SIZE, "%lu|%lu", num_hops, id);
+    }
 
     if (num_hops == 0) {
       // send to rm_fd
