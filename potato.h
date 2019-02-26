@@ -12,6 +12,7 @@
 #define __POTATO_H__
 
 #define SHORT_MSG_SIZE 512
+#define POTATO_SIZE 5120
 #define LISTEN_BACKLOG 100
 
 #include <assert.h>
@@ -56,7 +57,10 @@ typedef struct _player_info_t {
 int open_server_socket(const char *hostname, const char *port);
 int open_client_socket(const char *server_hostname, const char *server_port);
 
-void send_all(int fd, char *buf, size_t size); // todo: test this func
+void send_all(int fd, char *buf, size_t size); // todo: test
+
+void send_signal(int sig, int send_to_fd); // 0 - accept, 1 - ready, 2 - end
+
 /*-----------------------------------------------------------*/
 
 /*-----------------------parsing functions-------------------*/
@@ -460,10 +464,46 @@ int get_right_neigh(int rm_fd, char *r_hostname, char *r_port) {
   return get_player_host(rm_fd, r_hostname, r_port);
 }
 
-void send_accept_signal(int player_fd) {
-  //
-  return;
+void send_signal(int sig, int send_to_fd) {
+  // 0 - accept, 1 - ready, 2 - end
+  size_t len = (sig == 2) ? POTATO_SIZE : SHORT_MSG_SIZE;
+  char msg_buf[len];
+  memset(&msg_buf, 0, len);
+
+  switch (sig) {
+  case 0:
+    if (snprintf(msg_buf, len, "a~accept|") < 0) {
+      fprintf(stderr, "Error: snprintf - sig accept\n");
+      exit(EXIT_FAILURE);
+    }
+    break;
+  case 1:
+    if (snprintf(msg_buf, len, "r~ready|") < 0) {
+      fprintf(stderr, "Error: snprintf - sig accept\n");
+      exit(EXIT_FAILURE);
+    }
+    break;
+  case 2:
+    if (snprintf(msg_buf, len, "e~end|") < 0) {
+      fprintf(stderr, "Error: snprintf - sig accept\n");
+      exit(EXIT_FAILURE);
+    }
+    break;
+  default:
+    fprintf(stderr, "Error: invalid signal to send_signal\n");
+    exit(EXIT_FAILURE);
+    break;
+  }
+
+  send_all(send_to_fd, msg_buf, len);
 }
+
+void send_accept_signal(int player_fd) { send_signal(0, player_fd); }
+
+void send_ready_signal(int rm_fd) { send_signal(1, rm_fd); }
+
+// think about END signal once again later
+void send_end_signal(int player_fd) { send_signal(2, player_fd); }
 /*---------------------end implementations----------------------*/
 
 #endif
