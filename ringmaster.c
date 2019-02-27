@@ -55,7 +55,7 @@ void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
 
   // check: num_players > 1
   // check: num_hops >= 0 | <= 512
-  if (num_players < MIN_PLAYERS) {
+  if (num_players <= MIN_PLAYERS) {
     printf("Minimum no. of players is %d\n", MIN_PLAYERS);
     exit(EXIT_FAILURE);
   }
@@ -95,10 +95,6 @@ int main(int argv, char *argc[]) {
          "Players = %lu\n"
          "Hops = %lu\n",
          rm_ip->num_players, rm_ip->num_hops);
-
-  if (rm_ip->num_hops == 0) {
-    return EXIT_SUCCESS;
-  }
 
   // server socket at port defined in input
   int rm_fd = open_server_socket(NULL, rm_ip->port_num);
@@ -175,6 +171,13 @@ int main(int argv, char *argc[]) {
 
     // send first one in pair r_neigh info to connect to
     send_right_neigh(players_info[id].fd, &players_info[right]);
+  }
+  /*------------------------finished setting up ring--------------------------*/
+  if (rm_ip->num_hops == 0) {
+    for (size_t id = 0; id < rm_ip->num_players; id++) {
+      send_end_signal(players_info[id].fd);
+    }
+    return EXIT_SUCCESS;
   }
 
   // master fds

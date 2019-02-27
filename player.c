@@ -89,6 +89,8 @@ int main(int argv, char *argc[]) {
 
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
+  srand((unsigned int)time(NULL) + id);
+
   // 02 send "hostname~###|port~###|"
   server_fd =
       open_server_socket(NULL, "0"); // bind to and listen on a free port
@@ -214,8 +216,11 @@ int main(int argv, char *argc[]) {
       send_all(rm_fd, potato_buf, POTATO_SIZE);
     } else {
       // seed random function
-      srand((unsigned int)time(NULL) + id);
+
       int random = rand() % 2;
+
+      printf("random number:\t%d\n", random);
+
       switch (random) {
       case 0:
         printf("Sending potato to %d\n", l_id);
