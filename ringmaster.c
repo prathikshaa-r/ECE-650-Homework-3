@@ -40,18 +40,18 @@ void parse_rm_input(int margv, char *margc[], ringmaster_inputs_t *inputs) {
     exit(EXIT_FAILURE);
   }
 
-  printf("program name:\t%s\n"
-         "port_num:\t%s\n"
-         "num_players:\t%s\n"
-         "num_hops:\t%s\n",
-         margc[0], margc[1], margc[2], margc[3]); // remove
+  /* printf("program name:\t%s\n" */
+  /*        "port_num:\t%s\n" */
+  /*        "num_players:\t%s\n" */
+  /*        "num_hops:\t%s\n", */
+  /*        margc[0], margc[1], margc[2], margc[3]); // remove */
 
   // parsing the string to numbers
   const char *port_num = margc[1];
   size_t num_players = str_to_num(margc[2]);
   size_t num_hops = str_to_num(margc[3]);
 
-  printf("PORT NUM:\t%s\n", port_num); // remove
+  //  printf("PORT NUM:\t%s\n", port_num); // remove
 
   // check: num_players > 1
   // check: num_hops >= 0 | <= 512
@@ -128,10 +128,10 @@ int main(int argv, char *argc[]) {
 
     players_info[id].id = id;
     players_info[id].fd = player_fd;
-    printf("player id:\t%lu\n"
-           "sock_id:\t%d\n",
-           id,
-           players_info[id].fd); // remove
+    /* printf("player id:\t%lu\n" */
+    /*        "sock_id:\t%d\n", */
+    /*        id, */
+    /*        players_info[id].fd); // remove */
 
     // 01 send "id:###|tot:###|"
     send_player_id_tot(player_fd, id, rm_ip->num_players);
@@ -154,13 +154,14 @@ int main(int argv, char *argc[]) {
     }
   } // end for
 
-  for (size_t id = 0; id < rm_ip->num_players; id++) {
-    printf("player id:\t%d | hostname:\t%s | port:\t%s\n"
-           "r_neigh id:\t%d | hostname:\t%s | port:\t%s\n\n",
-           players_info[id].id, players_info[id].hostname,
-           players_info[id].port, players_info[id].right->id,
-           players_info[id].right->hostname, players_info[id].right->port);
-  }
+  /* for (size_t id = 0; id < rm_ip->num_players; id++) { */
+  /*   printf("player id:\t%d | hostname:\t%s | port:\t%s\n" */
+  /*          "r_neigh id:\t%d | hostname:\t%s | port:\t%s\n\n", */
+  /*          players_info[id].id, players_info[id].hostname, */
+  /*          players_info[id].port, players_info[id].right->id, */
+  /*          players_info[id].right->hostname, players_info[id].right->port);
+   */
+  /* } // remove */
 
   // send neighbour info to all players
   for (size_t id = 0; id < rm_ip->num_players; id++) {
@@ -187,7 +188,8 @@ int main(int argv, char *argc[]) {
 
     int ret = get_player_host(players_info[id].fd, NULL, NULL);
     if (ret == 1) {
-      printf("recvd ready signal from player %d\n", players_info[id].id);
+      /* printf("recvd ready signal from player %d\n", */
+      /*        players_info[id].id); // remove */
     }
   }
 
@@ -207,12 +209,12 @@ int main(int argv, char *argc[]) {
     exit(EXIT_FAILURE);
   }
 
-  printf("Potato:\n%s\n", hops); // remove
+  //  printf("Potato:\n%s\n", hops); // remove
 
   send_all(players_info[random].fd, hops, len);
   /*------------------------------------------------------------------------*/
 
-  printf("Sent potato to socket %d.\n", players_info[random].fd);
+  //  printf("Sent potato to socket %d.\n", players_info[random].fd); //remove
   // man select
   while (1) {
     read_fds = master;
@@ -221,7 +223,7 @@ int main(int argv, char *argc[]) {
       perror("Error: select\n");
       exit(EXIT_FAILURE);
     } else if (ready == 0) {
-      printf("No player ready.\n"); // remove
+      //      printf("No player ready.\n"); // remove
       continue;
     } else if (ready != 1) {
       fprintf(stderr,

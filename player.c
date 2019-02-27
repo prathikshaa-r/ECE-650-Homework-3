@@ -31,12 +31,12 @@ void parse_p_inputs(int margv, char *margc[], player_inputs_t *inputs) {
     exit(EXIT_FAILURE);
   }
 
-  printf("program name:\t\t\t%s\n"
-         "ringmaster_machine_name:\t%s\n"
-         "ringmaster_port_num:\t\t%s\n",
-         margc[0], margc[1], margc[2]); // remove
-  inputs->machine_name = margc[1];      // todo: does this work?
-  inputs->port_num = margc[2];          // defined in potato.h
+  /* printf("program name:\t\t\t%s\n" */
+  /*        "ringmaster_machine_name:\t%s\n" */
+  /*        "ringmaster_port_num:\t\t%s\n", */
+  /*        margc[0], margc[1], margc[2]); // remove */
+  inputs->machine_name = margc[1]; // todo: does this work?
+  inputs->port_num = margc[2];     // defined in potato.h
   return;
 }
 
@@ -72,13 +72,13 @@ int main(int argv, char *argc[]) {
   player_inputs_t *p_ip = malloc(sizeof(player_inputs_t)); // free
   parse_p_inputs(argv, argc, p_ip);
 
-  printf("Machine Name:\t%s\n", p_ip->machine_name); // remove
-  printf("Port Num:\t%s\n", p_ip->port_num);         // remove
+  /* printf("Machine Name:\t%s\n", p_ip->machine_name); // remove */
+  /* printf("Port Num:\t%s\n", p_ip->port_num);         // remove */
 
   rm_fd = open_client_socket(p_ip->machine_name, p_ip->port_num);
   if (rm_fd == -1) {
     fprintf(stderr,
-            "Failed to establish connection with ringmaster at %s, %s\n",
+            "Error: Failed to establish connection with ringmaster at %s, %s\n",
             p_ip->machine_name, p_ip->port_num);
     exit(EXIT_FAILURE);
   }
@@ -96,7 +96,7 @@ int main(int argv, char *argc[]) {
       open_server_socket(NULL, "0"); // bind to and listen on a free port
 
   if (server_fd == -1) {
-    fprintf(stderr, "Player failed to open a server socket.\n");
+    fprintf(stderr, "Error: Player failed to open a server socket.\n");
     exit(EXIT_FAILURE);
   }
 
@@ -136,9 +136,9 @@ int main(int argv, char *argc[]) {
 
   // r_fd = 0;
   // l_fd = 0;
-  printf("rm_fd = %d\n", rm_fd);
-  printf("r_fd = %d\n", r_fd);
-  printf("l_fd = %d\n", l_fd);
+  /* printf("rm_fd = %d\n", rm_fd); */
+  /* printf("r_fd = %d\n", r_fd); */
+  /* printf("l_fd = %d\n", l_fd); */
 
   fd_max = (r_fd > l_fd) ? r_fd : l_fd;
   FD_SET(rm_fd, &master);
@@ -174,13 +174,13 @@ int main(int argv, char *argc[]) {
 
     if (FD_ISSET(rm_fd, &read_fds)) {
       ready_fd = rm_fd;
-      printf("Ringmaster is ready\n");
+      //      printf("Ringmaster is ready\n"); // remove
     } else if (FD_ISSET(l_fd, &read_fds)) {
       ready_fd = l_fd;
-      printf("Left is ready.\n");
+      //      printf("Left is ready.\n"); // remove
     } else if (FD_ISSET(r_fd, &read_fds)) {
       ready_fd = r_fd;
-      printf("Right is ready.\n");
+      //      printf("Right is ready.\n"); // remove
     }
 
     if (ready_fd == -1) {
@@ -219,7 +219,7 @@ int main(int argv, char *argc[]) {
 
       int random = rand() % 2;
 
-      printf("random number:\t%d\n", random);
+      //      printf("random number:\t%d\n", random); // remove
 
       switch (random) {
       case 0:

@@ -133,7 +133,7 @@ size_t parse_msgs(char *msg, char *results[], size_t num_fields) {
       break;
     }
 
-    printf("Field %lu:\t%s\n", j, field);
+    //    printf("Field %lu:\t%s\n", j, field);
     // parse field to get value using '~'
     for (str2 = field;; str2 = NULL) {
       value = n_value;
@@ -143,12 +143,13 @@ size_t parse_msgs(char *msg, char *results[], size_t num_fields) {
       }
     }
 
-    printf("n_value:\t%s\n", n_value);
-    printf("Value:\t%s\n", value);
+    //    printf("n_value:\t%s\n", n_value);
+    //    printf("Value:\t%s\n", value);
     results[j] = value;
   }
   if (j != num_fields) {
-    fprintf(stderr, "expected %lu fields, found only %lu\n", num_fields, j);
+    //    fprintf(stderr, "expected %lu fields, found only %lu\n", num_fields,
+    //    j);
   }
 
   return j; // return num of fields found
@@ -157,7 +158,9 @@ size_t parse_msgs(char *msg, char *results[], size_t num_fields) {
 // todo: is the parse_input function vulnerable to buffer overflow due to
 // dynamic memory alloc?
 size_t str_to_num(const char *str) {
-  printf("string: %s\n", str);
+
+  //  printf("string: %s\n", str);
+
   // use strtoul
   char *endptr;
   // check for -ve nos.
@@ -244,7 +247,7 @@ int open_server_socket(const char *hostname, const char *port) {
     return -1;
   }
 
-  printf("Listening on port %s\n", port); // remove
+  //  printf("Listening on port %s\n", port); // remove
   freeaddrinfo(addr_list);
   return fd;
 }
@@ -325,28 +328,29 @@ void send_player_port(int listener_fd, int send_to_fd) {
   size_t len = SHORT_MSG_SIZE;
   char my_hostname[len]; // = NULL;
   if (gethostname(my_hostname, len) != 0) {
-    perror("Failed to get host name.\n");
+    perror("Error: Failed to get host name.\n");
     exit(EXIT_FAILURE);
   }
 
   if (my_hostname[len - 1] != '\0') {
-    printf("hostname longer than %lu characters:%s\n", len, my_hostname);
+    fprintf(stderr, "Error: hostname longer than %lu characters:%s\n", len,
+            my_hostname);
   }
-  printf("hostname:\t%s\n", my_hostname);
+  //  printf("hostname:\t%s\n", my_hostname);
   int my_port = ntohs(listen_addr.sin_port);
 
-  printf("Listening on port %d\n", my_port);
+  //  printf("Listening on port %d\n", my_port);
 
   char buf_my_serv_info[SHORT_MSG_SIZE];
   len = SHORT_MSG_SIZE;
   memset(&buf_my_serv_info, 0, len);
   if (snprintf(buf_my_serv_info, len, "hostname~%s|port~%d|", my_hostname,
                my_port) < 0) {
-    fprintf(stderr, "building string using snprintf failed.\n");
+    fprintf(stderr, "Error: building string using snprintf failed.\n");
     exit(EXIT_FAILURE);
   }
 
-  printf("send_player_port:\n%s\n\n", buf_my_serv_info);
+  //  printf("send_player_port:\n%s\n\n", buf_my_serv_info);
 
   if (send_all(send_to_fd, buf_my_serv_info, len) == -1) {
     fprintf(stderr, "Error: sending player server info:\n");
@@ -397,16 +401,16 @@ void get_id_tot(int rm_fd, size_t *id_ptr, size_t *tot_ptr) {
     exit(EXIT_FAILURE);
   }
 
-  printf("Recv returned %ld\n", recv_status); // remove
+  //  printf("Recv returned %ld\n", recv_status); // remove
   buffer[recv_status] = '\0';
-  printf("Server said:\t%s\n", buffer); // remove
+  //  printf("Server said:\t%s\n", buffer); // remove
 
   parse_msgs(buffer, arr, 2);
   id = str_to_num(arr[0]);
   tot = str_to_num(arr[1]);
-  printf("id:\t%lu\n"
-         "tot:\t%lu\n",
-         id, tot); // remove
+  /* printf("id:\t%lu\n" */
+  /*        "tot:\t%lu\n", */
+  /*        id, tot); // remove */
 
   *id_ptr = id;
   *tot_ptr = tot;
@@ -424,18 +428,18 @@ int get_player_host(int player_fd, char *hostname, char *port) {
 
   recv_status = recv(player_fd, buffer, SHORT_MSG_SIZE, MSG_WAITALL);
   if (recv_status == -1) {
-    fprintf(stderr, "Failed to recv data\n");
+    fprintf(stderr, "Error: Failed to recv data\n");
     exit(EXIT_FAILURE);
   }
 
   if (recv_status == 0) {
-    fprintf(stderr, "Connection closed by server\n");
+    fprintf(stderr, "Error: Connection closed by server\n");
     exit(EXIT_FAILURE);
   }
 
-  printf("Recv returned %ld\n", recv_status); // remove
+  //  printf("Recv returned %ld\n", recv_status); // remove
   buffer[recv_status] = '\0';
-  printf("Server said:\t%s\n", buffer); // remove
+  //  printf("Server said:\t%s\n", buffer); // remove
 
   size_t num_fields = parse_msgs(buffer, arr, 2);
 
@@ -444,11 +448,11 @@ int get_player_host(int player_fd, char *hostname, char *port) {
     strncpy(hostname, arr[0], SHORT_MSG_SIZE);
     strncpy(port, arr[1], SHORT_MSG_SIZE);
 
-    printf("hostname:\t%s\n"
-           "port:\t%s\n",
-           hostname, port); // remove
+    /* printf("hostname:\t%s\n" */
+    /*        "port:\t%s\n", */
+    /*        hostname, port); // remove */
   } else if (num_fields == 1) {
-    printf("received:\t%s\n", arr[0]); // remove
+    //    printf("received:\t%s\n", arr[0]); // remove
 
     // check accept
     if (!(strcmp(arr[0], "accept"))) {
@@ -559,8 +563,8 @@ int get_potato(int get_from_fd, size_t *num_hops_ptr, char *trace) {
     exit(EXIT_FAILURE);
   }
 
-  printf("Potato recv status:\t%ld\n", recv_status); // remove
-  printf("Received:\t%s\n", buffer);
+  //  printf("Potato recv status:\t%ld\n", recv_status); // remove
+  //  printf("Received:\t%s\n", buffer);
 
   /*-------------------------strtok-----------------------------*/
   char *str1; //, *str2, *field, *value, *n_value;
@@ -588,13 +592,13 @@ int get_potato(int get_from_fd, size_t *num_hops_ptr, char *trace) {
       strncpy(trace, field, trace_len);
     }
 
-    printf("Field %lu:\t%s\n", j, field);
+    //    printf("Field %lu:\t%s\n", j, field);
   }
 
   /*------------------------------------------------------------*/
-  printf("num_hops:\t%ld\n"
-         "trace:\t%s\n",
-         *num_hops_ptr, trace);
+  /* printf("num_hops:\t%ld\n" */
+  /*        "trace:\t%s\n", */
+  /*        *num_hops_ptr, trace); */
 
   return 0;
 }
