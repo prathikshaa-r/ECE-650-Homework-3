@@ -248,7 +248,11 @@ int main(int argv, char *argc[]) {
 
       int random = rand() % 2;
 
-      //      printf("random number:\t%d\n", random); // remove
+      // time_t curr_time = time(NULL);
+      // get_user_choice(&random, curr_time); -- multithreaded? close i/o thread
+      // when time runs out?
+
+      // printf("random number:\t%d\n", random); // remove
 
       switch (random) {
       case 0:
