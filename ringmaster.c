@@ -190,6 +190,7 @@ int main(int argv, char *argc[]) {
     if (ret == 1) {
       /* printf("recvd ready signal from player %d\n", */
       /*        players_info[id].id); // remove */
+      printf("Player %d is ready to play.\n", players_info[id].id);
     }
   }
 

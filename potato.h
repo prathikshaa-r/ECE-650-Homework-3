@@ -235,7 +235,8 @@ int open_server_socket(const char *hostname, const char *port) {
   }
 
   if (addr_iterator == NULL) {
-    fprintf(stderr, "Error: failed to bind to any of the addresses retrieved");
+    fprintf(stderr,
+            "Error: failed to bind to any of the addresses retrieved.\n");
     freeaddrinfo(addr_list);
     return -1;
   }
