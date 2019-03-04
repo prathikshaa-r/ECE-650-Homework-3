@@ -6,7 +6,7 @@ all: $(TARGETS)
 .PHONY: clean clobber
 
 clean:
-	rm -f *~ *.o $(TARGETS)
+	rm -f *~ *.o $(TARGETS) select_server get_port
 
 clobber:
 	rm *~
