@@ -48,6 +48,7 @@ typedef struct _player_inputs_t {
 typedef struct _player_info_t {
   int id;
   int fd;
+  char username[SHORT_MSG_SIZE]; // interactive
   char hostname[SHORT_MSG_SIZE];
   char port[SHORT_MSG_SIZE];
   struct _player_info_t *left;

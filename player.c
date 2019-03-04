@@ -55,6 +55,7 @@ int main(int argv, char *argc[]) {
 
   char r_hostname[SHORT_MSG_SIZE];
   char r_port[SHORT_MSG_SIZE];
+  char username[SHORT_MSG_SIZE];
 
   memset(&r_hostname, 0, SHORT_MSG_SIZE);
   memset(&r_port, 0, SHORT_MSG_SIZE);
@@ -90,6 +91,13 @@ int main(int argv, char *argc[]) {
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
   srand((unsigned int)time(NULL) + id);
+
+  // Take user input
+  printf("Enter username(max length %d):\n", SHORT_MSG_SIZE);
+  fgets(username, SHORT_MSG_SIZE, stdin);
+
+  // sanitize input first
+  printf("Username: %s\n", username);
 
   // 02 send "hostname~###|port~###|"
   server_fd =
