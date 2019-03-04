@@ -133,6 +133,23 @@ int main(int argv, char *argc[]) {
     /*        id, */
     /*        players_info[id].fd); // remove */
 
+    /*---------------------------interactive game----------------------------*/
+    {
+      ssize_t recv_status = recv(player_fd, players_info[id].username,
+                                 SHORT_MSG_SIZE, MSG_WAITALL);
+      if (recv_status == -1) {
+        fprintf(stderr, "Failed to recieve username of connected player.\n");
+        exit(EXIT_FAILURE);
+      }
+
+      if (recv_status == 0) {
+        fprintf(stderr, "Connection closed by player.\n");
+        id--;
+        continue;
+      }
+    }
+    /*-----------------------------------------------------------------------*/
+
     // 01 send "id:###|tot:###|"
     send_player_id_tot(player_fd, id, rm_ip->num_players);
 
@@ -164,16 +181,28 @@ int main(int argv, char *argc[]) {
   /* } // remove */
 
   // send neighbour info to all players
+
+  for (size_t id = 0; id < rm_ip->num_players; id++) {
+    size_t right = (id == (rm_ip->num_players - 1)) ? 0 : (id + 1);
+    size_t left = (id == 0) ? (rm_ip->num_players - 1) : (id - 1);
+
+    /*-------------------------interactive game--------------------------*/
+    send_all(players_info[id].fd, players_info[left].username, SHORT_MSG_SIZE);
+    send_all(players_info[id].fd, players_info[right].username, SHORT_MSG_SIZE);
+    /*-------------------------------------------------------------------*/
+  }
+
   for (size_t id = 0; id < rm_ip->num_players; id++) {
     size_t right = (id == (rm_ip->num_players - 1)) ? 0 : (id + 1);
 
-    // send second one in pair "a~accept|" signal to let them accept connection
+    // send second one in pair "a~accept|" signal to let them accept
+    // connection
     send_accept_signal(players_info[right].fd);
 
     // send first one in pair r_neigh info to connect to
     send_right_neigh(players_info[id].fd, &players_info[right]);
   }
-  /*------------------------finished setting up ring--------------------------*/
+  /*-------------------finished setting up ring--------------------------*/
   if (rm_ip->num_hops == 0) {
     for (size_t id = 0; id < rm_ip->num_players; id++) {
       send_end_signal(players_info[id].fd);
@@ -190,7 +219,8 @@ int main(int argv, char *argc[]) {
     if (ret == 1) {
       /* printf("recvd ready signal from player %d\n", */
       /*        players_info[id].id); // remove */
-      printf("Player %d is ready to play.\n", players_info[id].id);
+      printf("Player %d: %s is ready to play.\n", players_info[id].id,
+             players_info[id].username);
     }
   }
 
@@ -198,7 +228,8 @@ int main(int argv, char *argc[]) {
   srand((unsigned int)time(NULL));
   int random = rand() % (rm_ip->num_players);
 
-  printf("Ready to start the game, sending potato to player %d.\n", random);
+  printf("Ready to start the game, sending potato to player %d: %s.\n", random,
+         players_info[random].username);
 
   /*-------------------------Send Potato to Player-------------------------*/
   size_t len = POTATO_SIZE;

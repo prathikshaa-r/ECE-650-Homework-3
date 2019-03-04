@@ -56,9 +56,14 @@ int main(int argv, char *argc[]) {
   char r_hostname[SHORT_MSG_SIZE];
   char r_port[SHORT_MSG_SIZE];
   char username[SHORT_MSG_SIZE];
+  char l_username[SHORT_MSG_SIZE];
+  char r_username[SHORT_MSG_SIZE];
 
   memset(&r_hostname, 0, SHORT_MSG_SIZE);
   memset(&r_port, 0, SHORT_MSG_SIZE);
+  memset(&username, 0, SHORT_MSG_SIZE);
+  memset(&l_username, 0, SHORT_MSG_SIZE);
+  memset(&r_username, 0, SHORT_MSG_SIZE);
 
   int fd_max;
   fd_set master;
@@ -84,6 +89,24 @@ int main(int argv, char *argc[]) {
     exit(EXIT_FAILURE);
   }
 
+  /*---------------------------interactive game----------------------------*/
+
+  // Take user input
+  printf("Enter username(max length %d):\n", SHORT_MSG_SIZE);
+  fgets(username, SHORT_MSG_SIZE, stdin);
+
+  char *newline = strchr(username, '\n');
+  if (newline) {
+    *newline = '\0';
+  }
+
+  // sanitize input first
+  printf("Username: %s\n", username);
+
+  send_all(rm_fd, username, SHORT_MSG_SIZE);
+
+  /*-----------------------------------------------------------------------*/
+
   // get player id and num_players from ringmaster
   // 01 recv "id:###|tot:###"
   get_id_tot(rm_fd, &id, &tot);
@@ -91,13 +114,6 @@ int main(int argv, char *argc[]) {
   printf("Connected as player %lu out of %lu total players.\n", id, tot);
 
   srand((unsigned int)time(NULL) + id);
-
-  // Take user input
-  printf("Enter username(max length %d):\n", SHORT_MSG_SIZE);
-  fgets(username, SHORT_MSG_SIZE, stdin);
-
-  // sanitize input first
-  printf("Username: %s\n", username);
 
   // 02 send "hostname~###|port~###|"
   server_fd =
@@ -109,6 +125,11 @@ int main(int argv, char *argc[]) {
   }
 
   send_player_port(server_fd, rm_fd); // send port number to ringmaster
+
+  recv(rm_fd, l_username, SHORT_MSG_SIZE, MSG_WAITALL);
+  printf("Left neighbour is: %s\n", l_username);
+  recv(rm_fd, r_username, SHORT_MSG_SIZE, MSG_WAITALL);
+  printf("Right neighbour is: %s\n", r_username);
 
   /* char *ack = "ACK"; */
   /* send(rm_fd, ack, strlen(ack), 0); */
@@ -231,11 +252,11 @@ int main(int argv, char *argc[]) {
 
       switch (random) {
       case 0:
-        printf("Sending potato to %d\n", l_id);
+        printf("Sending potato to %d: %s\n", l_id, l_username);
         send_all(l_fd, potato_buf, POTATO_SIZE);
         break;
       case 1:
-        printf("Sending potato to %d\n", r_id);
+        printf("Sending potato to %d: %s\n", r_id, r_username);
         send_all(r_fd, potato_buf, POTATO_SIZE);
         break;
       default:
